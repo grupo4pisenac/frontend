@@ -1,11 +1,23 @@
+Senac - Frontend PWA
 
-  # Admin Dashboard Design
+Este documento explica como rodar a interface de gestão da plataforma.
 
-  This is a code bundle for Admin Dashboard Design. The original project is available at https://www.figma.com/design/ZqRDrMJK1UuAJK4wf2Bw63/Admin-Dashboard-Design.
+Tecnologias
 
-  ## Running the code
+React + Vite: Base da aplicação web.
+Tailwind CSS / Shadcn UI: Estilização e componentes visuais.
+Lucide React: Biblioteca de ícones.
+Axios: Comunicação com a API Java.
+React Router Dom: Gestão de rotas e proteção de acesso. 
 
-  Run `npm i` to install the dependencies.
+Como Rodar
 
-  Run `npm run dev` to start the development server.
-  
+Instalar Dependências:
+
+npm install
+
+Iniciar o Servidor de Desenvolvimento:
+
+npm run dev
+
+Acesso: O sistema estará disponível em http://localhost:5173.

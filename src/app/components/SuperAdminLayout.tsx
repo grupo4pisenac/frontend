@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from "react-router";
+import { Outlet, Link, useLocation } from "react-router-dom"; // Corrigido para react-router-dom
 import { Bell, LayoutDashboard, GraduationCap, Settings, Users, Menu, X } from "lucide-react";
 import { useState } from "react";
 
@@ -6,16 +6,17 @@ export function SuperAdminLayout() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Ajustado para os novos caminhos dentro de /app
   const navigation = [
-    { name: "Dashboard Global", path: "/", icon: LayoutDashboard },
-    { name: "Gerenciar Cursos", path: "/cursos", icon: GraduationCap },
-    { name: "Configurar Regras", path: "/regras", icon: Settings },
-    { name: "Coordenadores", path: "/coordenadores", icon: Users },
+    { name: "Dashboard Global", path: "/app", icon: LayoutDashboard },
+    { name: "Gerenciar Cursos", path: "/app/cursos", icon: GraduationCap },
+    { name: "Configurar Regras", path: "/app/regras", icon: Settings },
+    { name: "Coordenadores", path: "/app/coordenadores", icon: Users },
   ];
 
   const isActive = (path: string) => {
-    if (path === "/") {
-      return location.pathname === "/";
+    if (path === "/app") {
+      return location.pathname === "/app";
     }
     return location.pathname.startsWith(path);
   };
