@@ -1,7 +1,7 @@
 
   # Admin Dashboard Design
 
-  This is a code bundle for Admin Dashboard Design. The original project is available at https://www.figma.com/design/AdTua8w9DO3GYruE1lDKb6/Admin-Dashboard-Design.
+  This is a code bundle for Admin Dashboard Design. The original project is available at https://www.figma.com/design/ZqRDrMJK1UuAJK4wf2Bw63/Admin-Dashboard-Design.
 
   ## Running the code
 
