@@ -21,11 +21,11 @@ export function GerenciarCursosSuperAdmin() {
   // alteração 2: Novos estados para o formulário (começo da alteração)
   // Novos estados para o formulário
   const [newCourseName, setNewCourseName] = useState("");
-  const [newSemestres, setNewSemestres] = useState<number | "">("");
   const [newCoordenador, setNewCoordenador] = useState("");
   const [newHoras, setNewHoras] = useState<number | "">("");
-  const [categoriasSelecionadas, setCategoriasSelecionadas] = useState<{ [key: string]: number }>({});
+  const [categoriasSelecionadas, setCategoriasSelecionadas] = useState<string[]>([]);
   // Novos estados para o formulário (fim da alteração)
+  //alt 1_1 de maio: retirada do limite de horas
   const [courses, setCourses] = useState<Curso[]>([]); // Começa vazio para receber do banco
   const [loading, setLoading] = useState(true);
 
@@ -59,13 +59,11 @@ export function GerenciarCursosSuperAdmin() {
         // --- NOVA LÓGICA DE TRATAMENTO ---
         // Aqui transformamos o objeto { Pesquisa: 20, Extensão: 30 } 
         // na string "Pesquisa (20h); Extensão (30h)" que o seu Java espera receber
-        const categoriasFormatadas = Object.entries(categoriasSelecionadas)
-          .map(([nome, limite]) => `${nome} (${limite}h)`)
-          .join("; ");
+        const categoriasFormatadas = categoriasSelecionadas.join("; ");
+        //alt 2_1 de maio: retirada do limite de horas
 
         const payload = {
           nome: newCourseName.trim(),
-          semestresLetivos: Number(newSemestres),
           coordenador: newCoordenador.trim(),
           horasComplementaresNecessarias: Number(newHoras),
           categoriasHoras: categoriasFormatadas // Aqui enviamos a string formatada
@@ -89,10 +87,9 @@ export function GerenciarCursosSuperAdmin() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setNewCourseName("");
-    setNewSemestres("");
     setNewCoordenador("");
     setNewHoras("");
-    setCategoriasSelecionadas({});
+    setCategoriasSelecionadas([]);
   };
 
   // 3. DELETAR: Remove o curso do banco (CursoController.deletar)
@@ -215,21 +212,6 @@ export function GerenciarCursosSuperAdmin() {
               />
             </div>
 
-            {/* Número de Semestres */}
-            <div>
-              <label className="block text-sm font-bold text-[#002868] mb-1">
-                Número de semestres letivos
-              </label>
-              <Input
-                type="number"
-                min="1"
-                placeholder="Ex: 5"
-                value={newSemestres}
-                onChange={(e) => setNewSemestres(e.target.value === "" ? "" : Number(e.target.value))}
-                className="bg-white"
-              />
-            </div>
-
             {/* Coordenador do Curso */}
             <div>
               <label className="block text-sm font-bold text-[#002868] mb-1">
@@ -261,58 +243,40 @@ export function GerenciarCursosSuperAdmin() {
             {/* alteração 4 - Categorias de Horas e Limites - Nova Versão */}
             <div className="space-y-3">
               <label className="block text-sm font-bold text-[#002868]">
-                Categorias e Limites de Horas
+                Categorias
               </label>
               <div className="grid grid-cols-1 gap-3 border rounded-md p-3 bg-gray-50">
                 {MODALIDADES_DISPONIVEIS.map((modalidade) => {
-                  const isSelected = categoriasSelecionadas[modalidade] !== undefined;
+  // Verifica se a modalidade está dentro do array de selecionadas
+  const isSelected = categoriasSelecionadas.includes(modalidade);
 
-                  return (
-                    <div key={modalidade} className="flex items-center justify-between gap-4">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id={modalidade}
-                          checked={isSelected}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              // Ao marcar, inicia com 0 horas
-                              setCategoriasSelecionadas({ ...categoriasSelecionadas, [modalidade]: 0 });
-                            } else {
-                              // Ao desmarcar, remove a chave do objeto
-                              const { [modalidade]: _, ...rest } = categoriasSelecionadas;
-                              setCategoriasSelecionadas(rest);
-                            }
-                          }}
-                          className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500 cursor-pointer"
-                        />
-                        <label htmlFor={modalidade} className="text-sm font-medium text-gray-700 cursor-pointer">
-                          {modalidade}
-                        </label>
-                      </div>
-
-                      {/* O input de horas só aparece se o checkbox estiver marcado */}
-                      {isSelected && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500">Limite (h):</span>
-                          <Input
-                            type="number"
-                            min="0"
-                            placeholder="Horas"
-                            className="w-20 h-8 bg-white"
-                            value={categoriasSelecionadas[modalidade]}
-                            onChange={(e) =>
-                              setCategoriasSelecionadas({
-                                ...categoriasSelecionadas,
-                                [modalidade]: Number(e.target.value)
-                              })
-                            }
-                          />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+  return (
+    <div key={modalidade} className="flex items-center justify-between gap-4">
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id={modalidade}
+          checked={isSelected}
+          onChange={(e) => {
+            if (e.target.checked) {
+              // Se marcou, adiciona ao array
+              setCategoriasSelecionadas([...categoriasSelecionadas, modalidade]);
+            } else {
+              // Se desmarcou, filtra o array removendo a modalidade
+              setCategoriasSelecionadas(categoriasSelecionadas.filter(item => item !== modalidade));
+            }
+          }}
+          className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500 cursor-pointer"
+        />
+        <label htmlFor={modalidade} className="text-sm font-medium text-gray-700 cursor-pointer">
+          {modalidade}
+        </label>
+      </div>
+      
+      {/* O bloco que renderizava o Input de limite de horas foi completamente removido daqui */}
+    </div>
+  );
+})}
               </div>
             </div>
           </div> {}
@@ -327,7 +291,7 @@ export function GerenciarCursosSuperAdmin() {
               <Button
                 onClick={handleSaveCourse}
                 className="bg-green-600 hover:bg-green-700 text-white"
-                disabled={!newCourseName.trim() || newSemestres === "" || newHoras === ""}
+                disabled={!newCourseName.trim() || newHoras === ""}
               >
                 Salvar Curso
               </Button>
