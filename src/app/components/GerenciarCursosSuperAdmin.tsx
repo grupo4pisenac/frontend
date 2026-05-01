@@ -6,7 +6,6 @@ import { Plus, Search, Edit, Trash2, MoreVertical } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "../../services/api"; // Importando nossa ponte com o Java
 
-// alteração 1: Fora da função do componente, para referência
 const MODALIDADES_DISPONIVEIS = ["Pesquisa", "Extensão", "Cultura", "Esportes"];
 
 // Definindo a estrutura do Curso conforme o Java (model/Curso.java)
@@ -15,11 +14,60 @@ interface Curso {
   nome: string;
 }
 
+// alteração 01maio povoar cursos
+interface Curso {
+  id: number;
+  nome: string;
+  coordenador?: string;
+  horasComplementaresNecessarias?: number;
+  categoriasHoras?: string;
+}
+
+const cursosExemplo: Curso[] = [
+  { 
+    id: 1, 
+    nome: "Análise e Desenvolvimento de sistemas", 
+    coordenador: "Carlos Mendes", 
+    horasComplementaresNecessarias: 100, 
+    categoriasHoras: "Pesquisa; Extensão; Cultura; Esportes." 
+  },
+  { 
+    id: 2, 
+    nome: "Gestão de Tecnologia da informação", 
+    coordenador: "Fernanda Lima", 
+    horasComplementaresNecessarias: 100, 
+    categoriasHoras: "Pesquisa; Extensão; Cultura; Monitoria." 
+  },
+  { 
+    id: 3, 
+    nome: "Redes de Computadores", 
+    coordenador: "Ricardo Souza", 
+    horasComplementaresNecessarias: 100, 
+    categoriasHoras: "Pesquisa; Extensão; Cultura; Monitoria." 
+  },
+  { 
+    id: 4, 
+    nome: "Ciência de dados", 
+    coordenador: "Ricardo Souza", 
+    horasComplementaresNecessarias: 100, 
+    categoriasHoras: "Pesquisa; Extensão; Cultura; Monitoria." 
+  },
+  { 
+    id: 5, 
+    nome: "Segurança da Informação", 
+    coordenador: "Patrícia Oliveira", 
+    horasComplementaresNecessarias: 100, 
+    categoriasHoras: "Pesquisa; Extensão; Cultura; Eventos científicos." 
+  }
+];
+
 export function GerenciarCursosSuperAdmin() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   // alteração 2: Novos estados para o formulário (começo da alteração)
   // Novos estados para o formulário
+  // alteração 3_1 maio: editar card do curso(linha abaixo)
+  const [editingCourse, setEditingCourse] = useState<Curso | null>(null);
   const [newCourseName, setNewCourseName] = useState("");
   const [newCoordenador, setNewCoordenador] = useState("");
   const [newHoras, setNewHoras] = useState<number | "">("");
@@ -51,30 +99,32 @@ export function GerenciarCursosSuperAdmin() {
     course.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  //alteração 3: NOVA VERSÃO DO CRIAR A SEGUIR:
-  // 2. CRIAR: Envia o novo curso para o Java (CursoController.criar)
+  //alteração 1maio: 
+// 2. CRIAR ou EDITAR: Envia o curso para o Java
   const handleSaveCourse = async () => {
     if (newCourseName.trim()) {
       try {
-        // --- NOVA LÓGICA DE TRATAMENTO ---
-        // Aqui transformamos o objeto { Pesquisa: 20, Extensão: 30 } 
-        // na string "Pesquisa (20h); Extensão (30h)" que o seu Java espera receber
         const categoriasFormatadas = categoriasSelecionadas.join("; ");
-        //alt 2_1 de maio: retirada do limite de horas
 
         const payload = {
           nome: newCourseName.trim(),
           coordenador: newCoordenador.trim(),
           horasComplementaresNecessarias: Number(newHoras),
-          categoriasHoras: categoriasFormatadas // Aqui enviamos a string formatada
+          categoriasHoras: categoriasFormatadas 
         };
-        // ---------------------------------
 
-        // Chamada para a sua API Java
-        await api.post('/cursos', payload);
+        if (editingCourse) {
+          // MODO EDIÇÃO
+          await api.put(`/cursos/${editingCourse.id}`, payload);
+          alert("Curso atualizado com sucesso!");
+        } else {
+          // MODO CRIAÇÃO
+          await api.post('/cursos', payload);
+          alert("Curso criado com sucesso!");
+        }
 
-        handleCloseModal(); // Fecha o modal e limpa os campos
-        fetchCourses();     // Atualiza a lista de cursos na tela
+        handleCloseModal(); 
+        fetchCourses(); 
 
       } catch (error: any) {
         console.error("Erro ao salvar curso:", error);
@@ -84,8 +134,29 @@ export function GerenciarCursosSuperAdmin() {
   };
 
   // Função auxiliar para limpar os campos ao cancelar
+  // Função para abrir o modal em modo de edição
+  const handleEditClick = (course: Curso) => {
+    setEditingCourse(course);
+    setNewCourseName(course.nome);
+    setNewCoordenador(course.coordenador || "");
+    setNewHoras(course.horasComplementaresNecessarias || "");
+
+    if (course.categoriasHoras) {
+      const categoriasArray = course.categoriasHoras
+        .split(";")
+        .map(cat => cat.replace(".", "").trim())
+        .filter(cat => cat.length > 0);
+      setCategoriasSelecionadas(categoriasArray);
+    } else {
+      setCategoriasSelecionadas([]);
+    }
+
+    setIsModalOpen(true);
+  };
+  // Função auxiliar para limpar os campos ao cancelar
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    setEditingCourse(null); // <-- Limpa o curso em edição
     setNewCourseName("");
     setNewCoordenador("");
     setNewHoras("");
@@ -112,11 +183,14 @@ export function GerenciarCursosSuperAdmin() {
             Cursos
           </h1>
           <p className="text-sm text-gray-600">
-            Cadastre e gerencie os cursos da instituição[cite: 70, 83].
+            Cadastre e gerencie os cursos da instituição.
           </p>
         </div>
         <Button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            handleCloseModal(); // Garante que tudo esteja limpo
+            setIsModalOpen(true); // Abre a janela vazia
+          }}
           className="bg-green-600 hover:bg-green-700 text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -133,68 +207,56 @@ export function GerenciarCursosSuperAdmin() {
           className="pl-11 bg-white border-gray-300"
         />
       </div>
+      
+      {/* Alteração 01 de maio_ Container dos Cards */}
+      <div className="space-y-4">
+        {cursosExemplo.map((course) => (
+          <div 
+            key={course.id} 
+            className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-5 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+          >
+            {/* Lado Esquerdo: Informações do Curso */}
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-[#002868]" style={{ fontFamily: 'Arvo, serif' }}>
+                {course.nome}
+              </h3>
+              <p className="text-sm text-gray-600">
+                <span className="font-semibold text-gray-800">Coordenador do Curso:</span> {course.coordenador}
+              </p>
+              <p className="text-sm text-gray-600">
+                <span className="font-semibold text-gray-800">Horas complementares necessárias:</span> {course.horasComplementaresNecessarias}
+              </p>
+              <p className="text-sm text-gray-600">
+                <span className="font-semibold text-gray-800">Categorias:</span> {course.categoriasHoras}
+              </p>
+            </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="text-left py-3 px-6 text-sm text-[#002868]" style={{ fontFamily: 'Arvo, serif' }}>
-                Nome do Curso
-              </th>
-              <th className="text-right py-3 px-6 text-sm text-[#002868]" style={{ fontFamily: 'Arvo, serif' }}>
-                Ações
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={2} className="text-center py-10">Carregando cursos...</td></tr>
-            ) : filteredCourses.map((course, index) => (
-              <tr
-                key={course.id}
-                className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
-                  }`}
+            {/* Lado Direito: Ações (Botões) */}
+            <div className="flex items-center space-x-2 mt-4 sm:mt-0">
+              <button 
+                className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                title="Editar Curso"
+                onClick={() => handleEditClick(course)}
               >
-                <td className="py-4 px-6">
-                  <p className="text-base text-gray-900 font-semibold">{course.nome}</p>
-                </td>
-                <td className="py-4 px-6 text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md p-2 text-gray-700 hover:bg-gray-100 focus:outline-none">
-                      <MoreVertical className="h-4 w-4" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={() => handleDeleteCourse(course.id)}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Excluir
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {!loading && filteredCourses.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">Nenhum curso encontrado</p>
+                <Edit className="w-5 h-5" />
+              </button>
+              <button 
+                className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                title="Excluir Curso"
+                onClick={() => console.log("Excluir clicado para:", course.id)}
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            </div>
           </div>
-        )}
+        ))}
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={handleCloseModal}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="text-2xl text-[#002868] font-bold" style={{ fontFamily: 'Arvo, serif' }}>
-              Novo Curso
+              {editingCourse ? "Editar Curso" : "Novo Curso"}
             </DialogTitle>
           </DialogHeader>
 
