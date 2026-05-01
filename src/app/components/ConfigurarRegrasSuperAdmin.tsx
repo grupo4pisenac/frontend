@@ -2,8 +2,11 @@ import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Settings, Plus, Trash2, Save, Info } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter} from "./ui/dialog";
+import { Settings, Plus, Trash2, Save, Info,Pencil, X} from "lucide-react";
 import { useState } from "react";
+
+
 
 interface Rule {
   id: number;
@@ -13,6 +16,8 @@ interface Rule {
 }
 
 export function ConfigurarRegrasSuperAdmin() {
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Mudei de isModalOpen para isEditModalOpen
+  const [editingRule, setEditingRule] = useState<Rule | null>(null);
   const [rules, setRules] = useState<Rule[]>([
     { id: 1, category: "Pesquisa", semesterLimit: 100, description: "Participação em projetos de pesquisa científica" },
     { id: 2, category: "Extensão", semesterLimit: 80, description: "Atividades de extensão universitária" },
@@ -28,6 +33,11 @@ export function ConfigurarRegrasSuperAdmin() {
     description: "",
   });
 
+  const [editingId, setEditingId] = useState<number | null>(null);
+  // para controlar se estamos editando ou criando.
+
+  //att a handleAddRule para suportar edição
+  // 1. Limpamos a handleAddRule (só cria agora)
   const handleAddRule = () => {
     if (newRule.category && newRule.semesterLimit) {
       const rule: Rule = {
@@ -40,6 +50,22 @@ export function ConfigurarRegrasSuperAdmin() {
       setNewRule({ category: "", semesterLimit: "", description: "" });
     }
   };
+
+  const handleEditRule = (rule: Rule) => {
+    setEditingRule({ ...rule });
+    setIsEditModalOpen(true);
+  };
+
+// 2. Salva as alterações feitas no Modal
+  const handleUpdateRule = () => {
+    if (editingRule) {
+      setRules(rules.map(r => r.id === editingRule.id ? editingRule : r));
+      setIsEditModalOpen(false);
+      setEditingRule(null);
+    }
+  };
+
+
 
   const handleDeleteRule = (id: number) => {
     setRules(rules.filter((rule) => rule.id !== id));
@@ -74,8 +100,8 @@ export function ConfigurarRegrasSuperAdmin() {
               Importante
             </h4>
             <p className="text-sm text-gray-700">
-              As regras configuradas aqui serão aplicadas globalmente a todos os cursos do sistema. 
-              Coordenadores podem definir limites mais restritivos, mas não mais permissivos do que 
+              As regras configuradas aqui serão aplicadas globalmente a todos os cursos do sistema.
+              Coordenadores podem definir limites mais restritivos, mas não mais permissivos do que
               os valores estabelecidos aqui.
             </p>
           </div>
@@ -135,10 +161,12 @@ export function ConfigurarRegrasSuperAdmin() {
 
         <Button
           onClick={handleAddRule}
-          className="bg-[#FF9414] hover:bg-[#FF9414]/90 text-white"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Adicionar Categoria
+          className="bg-[#FF9414] hover:bg-[#FF9414]/90 text-white">
+          {editingId !== null ? (
+            <> <Save className="w-4 h-4 mr-2" /> Atualizar Categoria </>
+          ) : (
+            <> <Plus className="w-4 h-4 mr-2" /> Adicionar Categoria </>
+          )}
         </Button>
       </Card>
 
@@ -194,7 +222,14 @@ export function ConfigurarRegrasSuperAdmin() {
                   <td className="py-4 px-6 text-sm text-gray-600">
                     {rule.description || "-"}
                   </td>
-                  <td className="py-4 px-6">
+
+
+                  <td className="py-4 px-6 flex gap-2">
+                    <button onClick={() => handleEditRule(rule)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Editar">
+                     <Pencil className="w-4 h-4" />
+                    </button>                  
                     <button
                       onClick={() => handleDeleteRule(rule.id)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -208,33 +243,69 @@ export function ConfigurarRegrasSuperAdmin() {
             </tbody>
           </table>
         </div>
-
-        {rules.length === 0 && (
-          <div className="text-center py-12">
-            <Settings className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">Nenhuma regra configurada</p>
-          </div>
-        )}
       </Card>
+          {/* MODAL DE EDIÇÃO */}
 
-      {/* Summary Card */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6 bg-gradient-to-br from-[#002868] to-[#0051A2] text-white">
-          <h4 className="text-sm opacity-90 mb-2">Total de Horas Disponíveis</h4>
-          <p className="text-4xl mb-2" style={{ fontFamily: 'Arvo, serif' }}>
-            {rules.reduce((sum, rule) => sum + rule.semesterLimit, 0)}h
-          </p>
-          <p className="text-xs opacity-75">Soma de todos os limites semestrais</p>
-        </Card>
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-[#002868] font-bold" style={{ fontFamily: 'Arvo, serif' }}>
+              Editar Categoria
+            </DialogTitle>
+          </DialogHeader>
 
-        <Card className="p-6 bg-gradient-to-br from-[#0051A2] to-[#FF9414] text-white">
-          <h4 className="text-sm opacity-90 mb-2">Categorias Ativas</h4>
-          <p className="text-4xl mb-2" style={{ fontFamily: 'Arvo, serif' }}>
-            {rules.length}
-          </p>
-          <p className="text-xs opacity-75">Configuradas no sistema</p>
-        </Card>
-      </div>
-    </div>
-  );
+          {editingRule && (
+              <div className="py-4 space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-[#002868] mb-1">
+                    Nome da Categoria
+                  </label>
+                  <Input
+                      value={editingRule.category}
+                      onChange={(e) => setEditingRule({ ...editingRule, category: e.target.value })}
+                      className="bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-[#002868] mb-1">
+                    Limite Semestral (Horas)
+                  </label>
+                  <Input
+                      type="number"
+                      value={editingRule.semesterLimit}
+                      onChange={(e) => setEditingRule({ ...editingRule, semesterLimit: Number(e.target.value) })}
+                      className="bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-[#002868] mb-1">
+                    Descrição
+                  </label>
+                  <Input
+                      value={editingRule.description}
+                      onChange={(e) => setEditingRule({ ...editingRule, description: e.target.value })}
+                      className="bg-white"
+                  />
+                </div>
+              </div>
+          )}
+
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+                onClick={handleUpdateRule}
+        className="bg-[#0051A2] text-white"
+        >
+        <Save className="w-4 h-4 mr-2" />
+        Salvar Alterações
+      </Button>
+    </DialogFooter>
+</DialogContent>
+</Dialog>
+</div>
+);
 }
