@@ -1,5 +1,6 @@
+// alt 2 de maio: adicionado "gerenciar estudantes" ao menu lateral
 import { Outlet, Link, useLocation } from "react-router-dom"; // Corrigido para react-router-dom
-import { Bell, LayoutDashboard, GraduationCap, Settings, Users, Menu, X } from "lucide-react";
+import { Bell, LayoutDashboard, GraduationCap, Settings, Users, Menu, X, User } from "lucide-react";
 import { useState } from "react";
 
 export function SuperAdminLayout() {
@@ -12,6 +13,7 @@ export function SuperAdminLayout() {
     { name: "Gerenciar Cursos", path: "/app/cursos", icon: GraduationCap },
     { name: "Configurar Regras", path: "/app/regras", icon: Settings },
     { name: "Coordenadores", path: "/app/coordenadores", icon: Users },
+    { name: "Gerenciar Estudantes", path: "/app/estudantes", icon: User },
   ];
 
   const isActive = (path: string) => {
