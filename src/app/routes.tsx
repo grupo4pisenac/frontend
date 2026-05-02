@@ -1,9 +1,11 @@
+// alt 2 de maio: adicionada rota para página "gerenciar estudantes", acessável pelo menu lateral
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { SuperAdminLayout } from "./components/SuperAdminLayout";
 import { DashboardGlobal } from "./components/DashboardGlobal";
 import { GerenciarCursosSuperAdmin } from "./components/GerenciarCursosSuperAdmin";
 import { ConfigurarRegrasSuperAdmin } from "./components/ConfigurarRegrasSuperAdmin";
 import { Coordenadores } from "./components/Coordenadores";
+import { Estudantes } from "./components/Estudantes";
 import { Login } from "./pages/Login";
 
 // Componente de proteção para validar o acesso
@@ -30,6 +32,7 @@ export const router = createBrowserRouter([
           { path: "cursos", element: <GerenciarCursosSuperAdmin /> },
           { path: "regras", element: <ConfigurarRegrasSuperAdmin /> },
           { path: "coordenadores", element: <Coordenadores /> },
+          { path: "estudantes", element: <Estudantes /> },
           { path: "*", element: <DashboardGlobal /> },
         ]
       }
