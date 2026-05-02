@@ -1,4 +1,5 @@
-// alt 2 de maio: página criada
+//alt 2 de maio: página criada.
+// todos os endpoints pra integração já foram criados, a bronca aparentemente agora é só ligar o caminho (linha 54) ao back do jeito certo
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -6,20 +7,19 @@ import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { UserPlus, Search, Mail, Edit, Trash2, Users } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "../../services/api"; // Importando a ponte com o backend
 
-// 1. Interface de dados do Aluno
+// 1. Interface de dados do Aluno (Atualizada conforme o Backend)
 interface Student {
   id: number;
-  name: string;
+  nome: string;
   email: string;
-  course: string;
+  perfil?: string;
+  cursos: { id?: number; nome: string }[];
 }
 
-// 2. Array vazio - você vai povoar depois
-const mockStudents: Student[] = [];
-
-// 3. Lista de Cursos Disponíveis para uso nos selects
+// 2. Lista de Cursos Disponíveis para uso nos selects
 const CURSOS_DISPONIVEIS = [
   "Análise e Desenvolvimento de Sistemas",
   "Gestão de Tecnologia da Informação",
@@ -33,23 +33,49 @@ export function Estudantes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCourse, setFilterCourse] = useState("todos");
 
-  // Estados do Modal e Formulário
+  // Estado para guardar os alunos vindos do banco de dados
+  const [students, setStudents] = useState<Student[]>([]);
+
+  // Estados do Modal Principal (Adicionar/Editar)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [nameInput, setNameInput] = useState("");
   const [emailInput, setEmailInput] = useState("");
   const [courseInput, setCourseInput] = useState("");
 
-  // Função para abrir modal de edição pré-preenchido
+  // Estados para o Modal de Exclusão
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState<number | null>(null);
+
+  // --- GET: Buscar alunos no banco ao carregar a página ---
+  const fetchStudents = async () => {
+    try {
+      console.log("Tentando buscar alunos...");
+      const response = await api.get('/usuarios/alunos');
+      console.log("Deu certo! O Java respondeu:", response.data);
+      setStudents(response.data);
+    } catch (error: any) {
+      console.error("Deu erro na busca. Detalhes:", error);
+      if (error.response) {
+         console.error("Status do erro:", error.response.status); // Vai mostrar se é 401, 404, 500...
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  // --- Lógica de Edição ---
   const handleEditClick = (student: Student) => {
     setEditingStudent(student);
-    setNameInput(student.name);
+    setNameInput(student.nome);
     setEmailInput(student.email);
-    setCourseInput(student.course);
+    // Pega o nome do primeiro curso associado ao aluno (se houver)
+    setCourseInput(student.cursos && student.cursos.length > 0 ? student.cursos[0].nome : "");
     setIsModalOpen(true);
   };
 
-  // Função para fechar e limpar modal
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingStudent(null);
@@ -58,10 +84,62 @@ export function Estudantes() {
     setCourseInput("");
   };
 
-  // Lógica para filtrar a lista combinando busca por nome E filtro de curso
-  const filteredStudents = mockStudents.filter((student) => {
-    const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCourse = filterCourse === "todos" || student.course === filterCourse;
+  // --- POST / PUT: Salvar Novo ou Editar ---
+  const handleSaveStudent = async () => {
+    if (!nameInput.trim() || !emailInput.trim() || !courseInput) {
+      alert("Preencha todos os campos obrigatórios!");
+      return;
+    }
+
+    try {
+      const payload = {
+        nome: nameInput,
+        email: emailInput,
+        perfil: "ALUNO",
+        cursos: [{ nome: courseInput }] // Enviando o curso no formato de array de objetos que o Java espera
+      };
+
+      if (editingStudent) {
+        // MODO EDIÇÃO (Atualizar aluno existente)
+        await api.put(`/usuarios/alunos/${editingStudent.id}`, payload);
+      } else {
+        // MODO CRIAÇÃO (Criar aluno novo)
+        await api.post('/usuarios/alunos', payload);
+      }
+
+      handleCloseModal();
+      fetchStudents(); // Recarrega a lista do banco de dados
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+      alert("Erro ao salvar o estudante. Verifique a conexão com o servidor.");
+    }
+  };
+
+  // --- DELETE: Confirmar e Excluir ---
+  const confirmDelete = (id: number) => {
+    setStudentToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteStudent = async () => {
+    if (studentToDelete) {
+      try {
+        await api.delete(`/usuarios/alunos/${studentToDelete}`);
+        setIsDeleteDialogOpen(false);
+        setStudentToDelete(null);
+        fetchStudents(); // Atualiza a lista após deletar
+      } catch (error) {
+        console.error("Erro ao excluir:", error);
+        alert("Erro ao excluir o estudante.");
+      }
+    }
+  };
+
+  // --- Lógica de Filtragem ---
+  const filteredStudents = students.filter((student) => {
+    const matchesSearch = student.nome.toLowerCase().includes(searchTerm.toLowerCase());
+    // Verifica se o curso existe dentro do array de cursos do aluno
+    const matchesCourse = filterCourse === "todos" || student.cursos.some(c => c.nome === filterCourse);
     return matchesSearch && matchesCourse;
   });
 
@@ -126,7 +204,7 @@ export function Estudantes() {
               </div>
               <div className="flex justify-end gap-3 pt-4">
                 <Button variant="outline" onClick={handleCloseModal}>Cancelar</Button>
-                <Button style={{ backgroundColor: "#FF9414" }} className="text-white">
+                <Button onClick={handleSaveStudent} style={{ backgroundColor: "#FF9414" }} className="text-white">
                   Salvar
                 </Button>
               </div>
@@ -149,7 +227,6 @@ export function Estudantes() {
               />
             </div>
             
-            {/* Filtro Dropdown para os Cursos */}
             <Select value={filterCourse} onValueChange={setFilterCourse}>
               <SelectTrigger className="w-full md:w-80">
                 <SelectValue placeholder="Filtrar por curso" />
@@ -172,9 +249,10 @@ export function Estudantes() {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
-                  <CardTitle className="text-lg mb-2">{student.name}</CardTitle>
-                  <p className="text-sm" style={{ color: "#0051A2" }}>
-                    {student.course}
+                  <CardTitle className="text-lg mb-2">{student.nome}</CardTitle>
+                  <p className="text-sm whitespace-pre-line" style={{ color: "#0051A2" }}>
+                    {/* Renderiza os cursos linha por linha */}
+                    {student.cursos.map(c => c.nome).join("\n")}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -186,7 +264,12 @@ export function Estudantes() {
                   >
                     <Edit className="size-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="size-8 text-red-600 hover:text-red-700">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="size-8 text-red-600 hover:text-red-700"
+                    onClick={() => confirmDelete(student.id)}
+                  >
                     <Trash2 className="size-4" />
                   </Button>
                 </div>
@@ -202,6 +285,28 @@ export function Estudantes() {
         ))}
       </div>
 
+      {/* --- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO --- */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-[#002868] font-bold text-xl" style={{ fontFamily: 'Arvo, serif' }}>
+              Confirmar Exclusão
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-600">Deseja realmente excluir o registro do aluno?</p>
+          </div>
+          <div className="flex justify-end gap-3 pt-2 border-t mt-2">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Não
+            </Button>
+            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleDeleteStudent}>
+              Sim
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* --- TELA VAZIA --- */}
       {filteredStudents.length === 0 && (
         <Card className="border-dashed border-2 bg-transparent shadow-none">
@@ -211,7 +316,7 @@ export function Estudantes() {
               Nenhum estudante encontrado
             </h3>
             <p className="text-gray-600">
-              {mockStudents.length === 0 
+              {students.length === 0 
                 ? "O banco de dados de alunos está vazio no momento. Adicione alunos para vê-los aqui." 
                 : "Não há alunos que correspondam a essa busca."}
             </p>
