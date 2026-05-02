@@ -274,17 +274,22 @@ export function GerenciarCursosSuperAdmin() {
               />
             </div>
 
-            {/* Coordenador do Curso */}
+            {/* Alt 1 de maio Coordenador do Curso (selecionando de uma lista) */}
             <div>
               <label className="block text-sm font-bold text-[#002868] mb-1">
                 Coordenador do Curso
               </label>
-              <Input
-                placeholder="Buscar entre os docentes"
+              <select
                 value={newCoordenador}
                 onChange={(e) => setNewCoordenador(e.target.value)}
-                className="bg-white"
-              />
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer"
+              >
+                <option value="" disabled>Selecionar</option>
+                <option value="Carlos Mendes">Carlos Mendes</option>
+                <option value="Fernanda Lima">Fernanda Lima</option>
+                <option value="Ricardo Souza">Ricardo Souza</option>
+                <option value="Patrícia Oliveira">Patrícia Oliveira</option>
+              </select>
             </div>
 
             {/* Horas Complementares */}
