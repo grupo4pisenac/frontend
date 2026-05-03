@@ -11,83 +11,71 @@ export function Login() {
     e.preventDefault();
 
     // --- MODO DE TESTE (SEM BACK-END) ---
-    // Use isso para testar o visual e entrar no sistema agora:
+    // Vai pular a validação e entrar direto pra você testar o visual e o Logout:
     localStorage.setItem('@EduManage:token', 'token-fake-teste');
     navigate('/app'); 
 
-    /* // --- MODO PRODUÇÃO (COM BACK-END) ---
-    // Seu amigo deve descomentar isso e comentar o modo de teste acima:
-    try {
-      const response = await api.post('/auth/login', { email, senha });
-      localStorage.setItem('@EduManage:token', response.data.token);
-      navigate('/app');
-    } catch (error) {
-      alert('Falha no login. Verifique suas credenciais.');
-    }
+    /* 
+    // --- MODO PRODUÇÃO (COM BACK-END REAL) ---
+    // try {
+    //   const response = await api.post('/auth/login', { email, senha });
+    //   localStorage.setItem('@EduManage:token', response.data.token || response.data);
+    //   navigate('/app'); 
+    // } catch (error) {
+    //   console.error(error);
+    //   alert('Falha no login. Verifique seu e-mail e senha e se o backend está rodando.');
+    // }
     */
   };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      height: '100vh', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      backgroundColor: '#f4f4f7',
-      fontFamily: 'sans-serif' 
-    }}>
-      <form onSubmit={handleLogin} style={{ 
-        background: 'white', 
-        padding: '2.5rem', 
-        borderRadius: '12px', 
-        boxShadow: '0 10px 25px rgba(0,0,0,0.1)', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '1.2rem', 
-        width: '350px' 
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-          <h2 style={{ color: '#004587', margin: 0, fontSize: '24px' }}>EduManage</h2>
-          <p style={{ color: '#666', fontSize: '14px', marginTop: '5px' }}>Painel do Coordenador</p>
+    // Fundo da tela ocupando 100% da altura, centralizando tudo e com padding no mobile
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4 font-sans">
+      
+      {/* Container do formulário: largura total (w-full), mas com limite máximo (max-w-sm) */}
+      <form 
+        onSubmit={handleLogin} 
+        className="bg-white p-8 rounded-xl shadow-lg flex flex-col gap-5 w-full max-w-sm"
+      >
+        <div className="text-center mb-2">
+          {/* Logo do Senac direto da Wikipedia (sempre em alta qualidade) */}
+          <img 
+            src="https://upload.wikimedia.org/wikipedia/commons/8/86/Senac_logo.svg" 
+            alt="Logo Senac" 
+            className="h-16 w-auto mx-auto mb-3 block object-contain" 
+          />
+          <p className="text-gray-500 text-sm font-medium">Gestão de Alunos</p>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#444' }}>E-mail</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-bold text-gray-700">E-mail</label>
           <input 
             type="email" 
             placeholder="exemplo@senac.com.br" 
             value={email} 
             onChange={e => setEmail(e.target.value)} 
-            style={{ padding: '0.8rem', border: '1px solid #ddd', borderRadius: '6px', outlineColor: '#eb8220' }} 
+            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#eb8220] transition-shadow"
             required 
           />
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#444' }}>Senha</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-bold text-gray-700">Senha</label>
           <input 
             type="password" 
             placeholder="••••••••" 
             value={senha} 
             onChange={e => setSenha(e.target.value)} 
-            style={{ padding: '0.8rem', border: '1px solid #ddd', borderRadius: '6px', outlineColor: '#eb8220' }} 
+            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#eb8220] transition-shadow"
             required 
           />
         </div>
 
-        <button type="submit" style={{ 
-          padding: '1rem', 
-          background: '#eb8220', 
-          color: 'white', 
-          border: 'none', 
-          borderRadius: '6px', 
-          cursor: 'pointer', 
-          fontWeight: 'bold',
-          fontSize: '15px',
-          marginTop: '0.5rem',
-          transition: 'background 0.2s'
-        }}>
-          ENTRAR NO SISTEMA
+        <button 
+          type="submit" 
+          className="w-full p-3 bg-[#eb8220] hover:bg-[#d67219] text-white rounded-md font-bold text-base mt-2 transition-colors"
+        >
+          ENTRAR
         </button>
       </form>
     </div>
