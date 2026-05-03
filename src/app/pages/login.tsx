@@ -10,22 +10,23 @@ export function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // --- MODO DE TESTE (SEM BACK-END) ---
-    // Vai pular a validação e entrar direto pra você testar o visual e o Logout:
-    localStorage.setItem('@EduManage:token', 'token-fake-teste');
-    navigate('/app'); 
+    // --- MODO DE TESTE (Desativado) ---
+    // localStorage.setItem('@EduManage:token', 'token-fake-teste');
+    // navigate('/app'); 
 
-    /* 
-    // --- MODO PRODUÇÃO (COM BACK-END REAL) ---
-    // try {
-    //   const response = await api.post('/auth/login', { email, senha });
-    //   localStorage.setItem('@EduManage:token', response.data.token || response.data);
-    //   navigate('/app'); 
-    // } catch (error) {
-    //   console.error(error);
-    //   alert('Falha no login. Verifique seu e-mail e senha e se o backend está rodando.');
-    // }
-    */
+    // --- MODO PRODUÇÃO (COM BACK-END REAL NO RAILWAY) ---
+    try {
+      const response = await api.post('/auth/login', { email, senha });
+      
+      // Salva o token real que o Java vai devolver
+      localStorage.setItem('@EduManage:token', response.data.token || response.data);
+      
+      // Redireciona para o painel
+      navigate('/app'); 
+    } catch (error) {
+      console.error(error);
+      alert('Falha no login. Verifique suas credenciais e se o servidor na nuvem está respondendo.');
+    }
   };
 
   return (
@@ -38,7 +39,7 @@ export function Login() {
         className="bg-white p-8 rounded-xl shadow-lg flex flex-col gap-5 w-full max-w-sm"
       >
         <div className="text-center mb-2">
-          {/* Logo do Senac direto da Wikipedia (sempre em alta qualidade) */}
+          
           <img 
             src="https://upload.wikimedia.org/wikipedia/commons/8/86/Senac_logo.svg" 
             alt="Logo Senac" 
