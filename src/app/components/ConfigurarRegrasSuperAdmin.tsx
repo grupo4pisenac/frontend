@@ -2,92 +2,161 @@ import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter} from "./ui/dialog";
-import { Settings, Plus, Trash2, Save, Info,Pencil, X} from "lucide-react";
-import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
+import { Settings, Plus, Trash2, Save, Info, Pencil } from "lucide-react";
+import { useState, useEffect } from "react";
+import { api } from "../../services/api";
 
+// ─── Tipos alinhados com o back ───────────────────────────────────────────────
 
-
-interface Rule {
+interface CursoResumo {
   id: number;
-  category: string;
-  semesterLimit: number;
-  description: string;
+  nome: string;
 }
 
+interface Regra {
+  id: number;
+  area: string;
+  limiteHoras: number;
+}
+
+// ─── Componente ───────────────────────────────────────────────────────────────
+
 export function ConfigurarRegrasSuperAdmin() {
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Mudei de isModalOpen para isEditModalOpen
-  const [editingRule, setEditingRule] = useState<Rule | null>(null);
-  const [rules, setRules] = useState<Rule[]>([
-    { id: 1, category: "Pesquisa", semesterLimit: 100, description: "Participação em projetos de pesquisa científica" },
-    { id: 2, category: "Extensão", semesterLimit: 80, description: "Atividades de extensão universitária" },
-    { id: 3, category: "Cultura", semesterLimit: 60, description: "Eventos e atividades culturais" },
-    { id: 4, category: "Esportes", semesterLimit: 40, description: "Participação em atividades esportivas" },
-    { id: 5, category: "Monitoria", semesterLimit: 50, description: "Monitoria acadêmica" },
-    { id: 6, category: "Eventos Científicos", semesterLimit: 70, description: "Congressos, seminários e conferências" },
-  ]);
 
-  const [newRule, setNewRule] = useState({
-    category: "",
-    semesterLimit: "",
-    description: "",
-  });
+  // Seleção de curso
+  const [cursos, setCursos] = useState<CursoResumo[]>([]);
+  const [cursoSelecionadoId, setCursoSelecionadoId] = useState<number | "">("");
 
-  const [editingId, setEditingId] = useState<number | null>(null);
-  // para controlar se estamos editando ou criando.
+  // Regras do curso selecionado
+  const [regras, setRegras] = useState<Regra[]>([]);
+  const [loadingRegras, setLoadingRegras] = useState(false);
 
-  //att a handleAddRule para suportar edição
-  // 1. Limpamos a handleAddRule (só cria agora)
-  const handleAddRule = () => {
-    if (newRule.category && newRule.semesterLimit) {
-      const rule: Rule = {
-        id: Date.now(),
-        category: newRule.category,
-        semesterLimit: parseInt(newRule.semesterLimit),
-        description: newRule.description,
-      };
-      setRules([...rules, rule]);
-      setNewRule({ category: "", semesterLimit: "", description: "" });
+  // Formulário — nova regra
+  const [newArea, setNewArea] = useState("");
+  const [newLimite, setNewLimite] = useState<number | "">("");
+
+  // Modal de edição
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingRegra, setEditingRegra] = useState<Regra | null>(null);
+
+  // ── Buscar cursos ────────────────────────────────────────────────────────────
+
+  const fetchCursos = async () => {
+    try {
+      const response = await api.get('/cursos');
+      setCursos(response.data);
+    } catch (error) {
+      console.error("Erro ao buscar cursos:", error);
     }
   };
 
-  const handleEditRule = (rule: Rule) => {
-    setEditingRule({ ...rule });
+  useEffect(() => {
+    fetchCursos();
+  }, []);
+
+  // ── Buscar regras do curso selecionado ───────────────────────────────────────
+
+  const fetchRegras = async (cursoId: number) => {
+    try {
+      setLoadingRegras(true);
+      const response = await api.get(`/cursos/${cursoId}/regras`);
+      setRegras(response.data);
+    } catch (error) {
+      console.error("Erro ao buscar regras:", error);
+      alert("Não foi possível carregar as regras do curso.");
+    } finally {
+      setLoadingRegras(false);
+    }
+  };
+
+  const handleCursoChange = (value: string) => {
+    const id = Number(value);
+    setCursoSelecionadoId(id);
+    setRegras([]);
+    fetchRegras(id);
+  };
+
+  // ── Criar regra ──────────────────────────────────────────────────────────────
+
+  const handleAddRule = async () => {
+    if (!newArea.trim() || newLimite === "" || cursoSelecionadoId === "") return;
+
+    const payload = {
+      area: newArea.trim(),
+      limiteHoras: Number(newLimite),
+    };
+
+    try {
+      await api.post(`/cursos/${cursoSelecionadoId}/regras`, payload);
+      setNewArea("");
+      setNewLimite("");
+      fetchRegras(Number(cursoSelecionadoId));
+    } catch (error: any) {
+      const mensagem = error?.response?.data?.message || "Erro ao adicionar regra.";
+      alert(mensagem);
+    }
+  };
+
+  // ── Editar regra ─────────────────────────────────────────────────────────────
+
+  const handleEditRule = (regra: Regra) => {
+    setEditingRegra({ ...regra });
     setIsEditModalOpen(true);
   };
 
-// 2. Salva as alterações feitas no Modal
-  const handleUpdateRule = () => {
-    if (editingRule) {
-      setRules(rules.map(r => r.id === editingRule.id ? editingRule : r));
+  const handleUpdateRule = async () => {
+    if (!editingRegra || cursoSelecionadoId === "") return;
+
+    const payload = {
+      area: editingRegra.area,
+      limiteHoras: editingRegra.limiteHoras,
+    };
+
+    try {
+      await api.put(`/cursos/${cursoSelecionadoId}/regras/${editingRegra.id}`, payload);
       setIsEditModalOpen(false);
-      setEditingRule(null);
+      setEditingRegra(null);
+      fetchRegras(Number(cursoSelecionadoId));
+    } catch (error: any) {
+      const mensagem = error?.response?.data?.message || "Erro ao atualizar regra.";
+      alert(mensagem);
     }
   };
 
+  // ── Deletar regra ────────────────────────────────────────────────────────────
 
+  const handleDeleteRule = async (regraId: number) => {
+    if (!confirm("Tem certeza que deseja excluir esta regra?") || cursoSelecionadoId === "") return;
 
-  const handleDeleteRule = (id: number) => {
-    setRules(rules.filter((rule) => rule.id !== id));
+    try {
+      await api.delete(`/cursos/${cursoSelecionadoId}/regras/${regraId}`);
+      fetchRegras(Number(cursoSelecionadoId));
+    } catch (error: any) {
+      const mensagem = error?.response?.data?.message || "Erro ao excluir regra.";
+      alert(mensagem);
+    }
   };
 
-  const handleSaveRules = () => {
-    alert("Regras globais salvas com sucesso!");
-  };
+  const nomeCursoSelecionado = cursos.find(c => c.id === cursoSelecionadoId)?.nome ?? "";
+
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
+
+      {/* Cabeçalho */}
       <div>
         <h2 className="text-2xl text-[#002868] mb-2" style={{ fontFamily: 'Arvo, serif' }}>
-          Configurar Regras Globais
+          Configurar Regras
         </h2>
         <p className="text-sm text-gray-600">
-          Defina limites e regras aplicáveis a todo o sistema
+          Defina os limites de horas por categoria para cada curso
         </p>
       </div>
 
-      {/* Info Banner */}
+      {/* Banner informativo */}
       <Card className="p-5 bg-blue-50 border-blue-200">
         <div className="flex gap-3">
           <div className="flex-shrink-0">
@@ -100,152 +169,157 @@ export function ConfigurarRegrasSuperAdmin() {
               Importante
             </h4>
             <p className="text-sm text-gray-700">
-              As regras configuradas aqui serão aplicadas globalmente a todos os cursos do sistema.
-              Coordenadores podem definir limites mais restritivos, mas não mais permissivos do que
-              os valores estabelecidos aqui.
+              As regras são configuradas por curso. Selecione um curso para visualizar
+              e gerenciar suas categorias e limites de horas complementares.
             </p>
           </div>
         </div>
       </Card>
 
-      {/* Add New Rule Form */}
+      {/* Seleção de Curso */}
       <Card className="p-6 bg-white">
-        <div className="flex items-center gap-2 mb-6">
+        <div className="flex items-center gap-2 mb-4">
           <Settings className="w-5 h-5 text-[#002868]" />
           <h3 className="text-lg text-[#002868]" style={{ fontFamily: 'Arvo, serif' }}>
-            Adicionar Nova Categoria
+            Selecionar Curso
           </h3>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div className="space-y-2">
-            <Label htmlFor="category" className="text-[#002868]">
-              Nome da Categoria
-            </Label>
-            <Input
-              id="category"
-              placeholder="Ex: Pesquisa, Extensão..."
-              value={newRule.category}
-              onChange={(e) => setNewRule({ ...newRule, category: e.target.value })}
-              className="bg-white border-gray-200"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="semesterLimit" className="text-[#002868]">
-              Limite Semestral de Horas
-            </Label>
-            <Input
-              id="semesterLimit"
-              type="number"
-              placeholder="Ex: 100"
-              value={newRule.semesterLimit}
-              onChange={(e) => setNewRule({ ...newRule, semesterLimit: e.target.value })}
-              className="bg-white border-gray-200"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description" className="text-[#002868]">
-              Descrição (Opcional)
-            </Label>
-            <Input
-              id="description"
-              placeholder="Breve descrição da categoria"
-              value={newRule.description}
-              onChange={(e) => setNewRule({ ...newRule, description: e.target.value })}
-              className="bg-white border-gray-200"
-            />
-          </div>
-        </div>
-
-        <Button
-          onClick={handleAddRule}
-          className="bg-[#FF9414] hover:bg-[#FF9414]/90 text-white">
-          {editingId !== null ? (
-            <> <Save className="w-4 h-4 mr-2" /> Atualizar Categoria </>
-          ) : (
-            <> <Plus className="w-4 h-4 mr-2" /> Adicionar Categoria </>
-          )}
-        </Button>
+        <Select
+          value={cursoSelecionadoId === "" ? "" : String(cursoSelecionadoId)}
+          onValueChange={handleCursoChange}
+        >
+          <SelectTrigger className="w-full md:w-96">
+            <SelectValue placeholder="Selecione um curso para configurar" />
+          </SelectTrigger>
+          <SelectContent>
+            {cursos.map((curso) => (
+              <SelectItem key={curso.id} value={String(curso.id)}>
+                {curso.nome}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </Card>
 
-      {/* Current Rules Table */}
-      <Card className="p-6 bg-white">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg text-[#002868]" style={{ fontFamily: 'Arvo, serif' }}>
-            Categorias Configuradas ({rules.length})
-          </h3>
+      {/* Formulário — só aparece após selecionar curso */}
+      {cursoSelecionadoId !== "" && (
+        <Card className="p-6 bg-white">
+          <div className="flex items-center gap-2 mb-6">
+            <Plus className="w-5 h-5 text-[#002868]" />
+            <h3 className="text-lg text-[#002868]" style={{ fontFamily: 'Arvo, serif' }}>
+              Adicionar Nova Categoria — {nomeCursoSelecionado}
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="space-y-2">
+              <Label className="text-[#002868]">Nome da Categoria</Label>
+              <Input
+                placeholder="Ex: Pesquisa, Extensão..."
+                value={newArea}
+                onChange={(e) => setNewArea(e.target.value)}
+                className="bg-white border-gray-200"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[#002868]">Limite de Horas</Label>
+              <Input
+                type="number"
+                min="1"
+                placeholder="Ex: 100"
+                value={newLimite}
+                onChange={(e) => setNewLimite(e.target.value === "" ? "" : Number(e.target.value))}
+                className="bg-white border-gray-200"
+              />
+            </div>
+          </div>
+
           <Button
-            onClick={handleSaveRules}
-            className="bg-[#0051A2] hover:bg-[#0051A2]/90 text-white"
+            onClick={handleAddRule}
+            disabled={!newArea.trim() || newLimite === ""}
+            className="bg-[#FF9414] hover:bg-[#FF9414]/90 text-white"
           >
-            <Save className="w-4 h-4 mr-2" />
-            Salvar Regras
+            <Plus className="w-4 h-4 mr-2" />
+            Adicionar Categoria
           </Button>
-        </div>
+        </Card>
+      )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-[#EEEEEE]">
-              <tr>
-                <th className="text-left py-4 px-6 text-sm text-[#002868]" style={{ fontFamily: 'Arvo, serif' }}>
-                  Categoria
-                </th>
-                <th className="text-left py-4 px-6 text-sm text-[#002868]" style={{ fontFamily: 'Arvo, serif' }}>
-                  Limite Semestral
-                </th>
-                <th className="text-left py-4 px-6 text-sm text-[#002868]" style={{ fontFamily: 'Arvo, serif' }}>
-                  Descrição
-                </th>
-                <th className="text-left py-4 px-6 text-sm text-[#002868]" style={{ fontFamily: 'Arvo, serif' }}>
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rules.map((rule) => (
-                <tr key={rule.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                  <td className="py-4 px-6">
-                    <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm bg-[#002868] text-white font-medium">
-                      {rule.category}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl text-[#0051A2]" style={{ fontFamily: 'Arvo, serif' }}>
-                        {rule.semesterLimit}
-                      </span>
-                      <span className="text-sm text-gray-600">horas</span>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 text-sm text-gray-600">
-                    {rule.description || "-"}
-                  </td>
+      {/* Tabela de Regras */}
+      {cursoSelecionadoId !== "" && (
+        <Card className="p-6 bg-white">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg text-[#002868]" style={{ fontFamily: 'Arvo, serif' }}>
+              Categorias Configuradas ({regras.length})
+            </h3>
+          </div>
 
+          {loadingRegras ? (
+            <p className="text-sm text-gray-500 text-center py-8">Carregando regras...</p>
+          ) : regras.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-8">
+              Nenhuma categoria configurada para este curso.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-[#EEEEEE]">
+                  <tr>
+                    <th className="text-left py-4 px-6 text-sm text-[#002868]" style={{ fontFamily: 'Arvo, serif' }}>
+                      Categoria
+                    </th>
+                    <th className="text-left py-4 px-6 text-sm text-[#002868]" style={{ fontFamily: 'Arvo, serif' }}>
+                      Limite de Horas
+                    </th>
+                    <th className="text-left py-4 px-6 text-sm text-[#002868]" style={{ fontFamily: 'Arvo, serif' }}>
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {regras.map((regra) => (
+                    <tr key={regra.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                      <td className="py-4 px-6">
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm bg-[#002868] text-white font-medium">
+                          {regra.area}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl text-[#0051A2]" style={{ fontFamily: 'Arvo, serif' }}>
+                            {regra.limiteHoras}
+                          </span>
+                          <span className="text-sm text-gray-600">horas</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditRule(regra)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Editar"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteRule(regra.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Excluir"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      )}
 
-                  <td className="py-4 px-6 flex gap-2">
-                    <button onClick={() => handleEditRule(rule)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      title="Editar">
-                     <Pencil className="w-4 h-4" />
-                    </button>                  
-                    <button
-                      onClick={() => handleDeleteRule(rule.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Excluir"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-          {/* MODAL DE EDIÇÃO */}
-
+      {/* Modal de Edição */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -254,58 +328,45 @@ export function ConfigurarRegrasSuperAdmin() {
             </DialogTitle>
           </DialogHeader>
 
-          {editingRule && (
-              <div className="py-4 space-y-4">
-                <div>
-                  <label className="block text-sm font-bold text-[#002868] mb-1">
-                    Nome da Categoria
-                  </label>
-                  <Input
-                      value={editingRule.category}
-                      onChange={(e) => setEditingRule({ ...editingRule, category: e.target.value })}
-                      className="bg-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-[#002868] mb-1">
-                    Limite Semestral (Horas)
-                  </label>
-                  <Input
-                      type="number"
-                      value={editingRule.semesterLimit}
-                      onChange={(e) => setEditingRule({ ...editingRule, semesterLimit: Number(e.target.value) })}
-                      className="bg-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-[#002868] mb-1">
-                    Descrição
-                  </label>
-                  <Input
-                      value={editingRule.description}
-                      onChange={(e) => setEditingRule({ ...editingRule, description: e.target.value })}
-                      className="bg-white"
-                  />
-                </div>
+          {editingRegra && (
+            <div className="py-4 space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-[#002868] mb-1">
+                  Nome da Categoria
+                </label>
+                <Input
+                  value={editingRegra.area}
+                  onChange={(e) => setEditingRegra({ ...editingRegra, area: e.target.value })}
+                  className="bg-white"
+                />
               </div>
+              <div>
+                <label className="block text-sm font-bold text-[#002868] mb-1">
+                  Limite de Horas
+                </label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={editingRegra.limiteHoras}
+                  onChange={(e) => setEditingRegra({ ...editingRegra, limiteHoras: Number(e.target.value) })}
+                  className="bg-white"
+                />
+              </div>
+            </div>
           )}
 
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
               Cancelar
             </Button>
-            <Button
-                onClick={handleUpdateRule}
-        className="bg-[#0051A2] text-white"
-        >
-        <Save className="w-4 h-4 mr-2" />
-        Salvar Alterações
-      </Button>
-    </DialogFooter>
-</DialogContent>
-</Dialog>
-</div>
-);
+            <Button onClick={handleUpdateRule} className="bg-[#0051A2] text-white">
+              <Save className="w-4 h-4 mr-2" />
+              Salvar Alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+    </div>
+  );
 }
