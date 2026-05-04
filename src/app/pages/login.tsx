@@ -10,6 +10,9 @@ export function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // LIMPANDO A SUJEIRA: Garante que não tem nenhum token velho ou falso atrapalhando a requisição
+    localStorage.removeItem('@EduManage:token');
+
     // --- MODO DE TESTE (Desativado) ---
     // localStorage.setItem('@EduManage:token', 'token-fake-teste');
     // navigate('/app'); 
