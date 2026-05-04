@@ -1,11 +1,51 @@
-// alt 2 de maio: adicionado "gerenciar estudantes" ao menu lateral
-import { Outlet, Link, useLocation } from "react-router-dom"; // Corrigido para react-router-dom
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom"; // Corrigido para react-router-dom
 import { Bell, LayoutDashboard, GraduationCap, Settings, Users, Menu, X, User } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "../../services/api"; // Importando a API
 
 export function SuperAdminLayout() {
   const location = useLocation();
+  const navigate = useNavigate(); // Hook de navegação adicionado
+  
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // --- LÓGICA DO USUÁRIO E DROPDOWN ---
+  const [menuAberto, setMenuAberto] = useState(false);
+  
+  // 1. Deixamos os dados fixos (mockados) para o visual não quebrar e sumir o "Carregando..."
+  const [usuario, setUsuario] = useState<any>({
+    nome: 'Admin Senac',
+    perfil: 'SUPER_ADMIN',
+    cursos: []
+  });
+
+  // 2. Comentamos o useEffect para ele parar de bater no endpoint inexistente
+  /*
+  useEffect(() => {
+    async function carregarPerfil() {
+      try {
+        const response = await api.get('/usuarios/me'); // Rota que busca os dados do back
+        setUsuario(response.data);
+      } catch (error) {
+        console.error("Erro ao buscar dados do usuário", error);
+      }
+    }
+    carregarPerfil();
+  }, []);
+  */
+
+  const handleLogout = () => {
+    localStorage.removeItem('@EduManage:token');
+    navigate('/'); 
+  };
+
+  const getIniciais = (nome: string) => {
+    if (!nome || nome === 'Carregando...') return '...';
+    const partes = nome.trim().split(' ');
+    if (partes.length >= 2) return `${partes[0][0]}${partes[partes.length - 1][0]}`.toUpperCase();
+    return nome.substring(0, 2).toUpperCase();
+  };
+  // ------------------------------------
 
   // Ajustado para os novos caminhos dentro de /app
   const navigation = [
@@ -136,30 +176,72 @@ export function SuperAdminLayout() {
             </div>
 
             {/* Right side - notifications and profile */}
-            <div className="flex items-center gap-4 ml-auto">
-              {/* Notifications */}
-              <button className="relative p-2 text-gray-600 hover:text-[#002868] hover:bg-gray-100 rounded-lg transition-colors">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-[#FF9414] rounded-full"></span>
+          <div className="flex items-center gap-4 ml-auto">
+            
+            {/* Notifications */}
+            <button className="relative p-2 text-gray-600 hover:text-[#002868] hover:bg-gray-100 rounded-lg transition-colors">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-[#FF9414] rounded-full"></span>
+            </button>
+
+            {/* Profile com Dropdown Dinâmico */}
+            <div className="relative flex items-center gap-3 pl-4 border-l border-gray-200">
+              
+              <div className="hidden sm:block text-right">
+                <div className="text-sm font-bold text-gray-900">
+                  {usuario.nome}
+                </div>
+                {usuario.perfil && (
+                  <div className="text-xs text-white bg-[#FF9414] px-2 py-0.5 rounded-full inline-block mt-0.5 font-medium">
+                    {usuario.perfil}
+                  </div>
+                )}
+              </div>
+
+              {/* Botão circular que abre o menu */}
+              <button 
+                onClick={() => setMenuAberto(!menuAberto)}
+                className="w-10 h-10 rounded-full bg-gradient-to-br from-[#002868] to-[#0051A2] flex items-center justify-center text-white font-bold shadow-sm hover:ring-2 hover:ring-[#FF9414] transition-all"
+              >
+                {getIniciais(usuario.nome)}
               </button>
 
-              {/* Profile */}
-              <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
-                <div className="hidden sm:block text-right">
-                  <div className="text-sm text-gray-900" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                    Dr. Ricardo Silva
+              {/* O Menu Dropdown Flutuante */}
+              {menuAberto && (
+                <div className="absolute right-0 top-12 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden">
+                  <div className="p-4 border-b border-gray-100 bg-gray-50">
+                    <p className="text-sm font-bold text-gray-900 truncate">{usuario.nome}</p>
+                    <p className="text-xs text-gray-500 mt-1">{usuario.perfil}</p>
+                    
+                    {/* Se o usuário tiver cursos vinculados, exibe aqui */}
+                    {usuario.cursos && usuario.cursos.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-xs font-bold text-[#002868] uppercase tracking-wider mb-1">Cursos</p>
+                        <ul className="text-xs text-gray-600 space-y-1">
+                          {usuario.cursos.map((curso: string, index: number) => (
+                            <li key={index} className="truncate">• {curso}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
-                  <div className="text-xs text-white bg-[#FF9414] px-2 py-0.5 rounded-full inline-block mt-0.5">
-                    Super Admin
-                  </div>
+                  
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                  >
+                    {/* Ícone de Sair */}
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Sair do Sistema
+                  </button>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#002868] to-[#0051A2] flex items-center justify-center text-white text-sm">
-                  RS
-                </div>
-              </div>
+              )}
             </div>
           </div>
-        </header>
+        </div> 
+      </header>
 
         {/* Page Content */}
         <main className="p-4 lg:p-8">
