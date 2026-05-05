@@ -5,7 +5,7 @@ Interface web progressiva (PWA) desenvolvida para o gerenciamento de atividades 
 
 🔗 Links
 
-Frontend (PWA): [em breve — Vercel]
+Frontend (PWA): https://frontend-two-xi-zk2ps4oz7r.vercel.app/
 Backend (API): https://backend-production-a784.up.railway.app
 Repositório Backend: https://github.com/grupo4pisenac/backend
 
