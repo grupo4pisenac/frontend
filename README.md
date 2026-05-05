@@ -54,3 +54,92 @@ O sistema é composto por duas aplicações integradas a um backend único:
 **1. Instalar as dependências**
 ```bash
 npm install
+```
+
+**2. Iniciar o servidor de desenvolvimento**
+```bash
+npm run dev
+```
+*A aplicação estará disponível em:* 👉 `http://localhost:5173`
+
+**3. Build de produção**
+```bash
+npm run build
+```
+
+---
+
+## 🔌 Integração com a API
+
+A aplicação consome a API Java hospedada no Railway de forma assíncrona via Axios. 
+O arquivo de configuração está em `src/services/api.ts`:
+
+```typescript
+// Produção (padrão)
+baseURL: '[https://backend-production-a784.up.railway.app](https://backend-production-a784.up.railway.app)'
+
+// Para desenvolvimento local (substituir temporariamente)
+// baseURL: 'http://localhost:8080'
+```
+**Autenticação:** Todas as requisições autenticadas injetam automaticamente o token JWT via interceptor do Axios.
+
+---
+
+## 📁 Estrutura de Pastas
+
+```text
+src/
+├── app/
+│   └── components/              # Componentes de tela
+│       ├── ui/                  # Componentes Shadcn/UI
+│       ├── AnalisarSubmissoes.tsx
+│       ├── ConfigurarRegrasSuperAdmin.tsx
+│       ├── Coordenadores.tsx
+│       ├── DashboardGlobal.tsx
+│       ├── Estudantes.tsx
+│       ├── GerenciarCursosSuperAdmin.tsx
+│       └── SuperAdminLayout.tsx
+├── pages/
+│   └── login.tsx                # Tela de autenticação
+├── services/
+│   └── api.ts                   # Configuração Axios + interceptors JWT
+├── routes.tsx                   # Rotas protegidas por perfil
+├── App.tsx
+└── main.tsx
+```
+
+---
+
+## 📱 Funcionalidades
+
+- [x] Login com autenticação JWT
+- [x] Separação de acesso por perfil (Super Admin / Coordenador)
+- [x] Gerenciamento de cursos
+- [x] Configuração de regras de atividades por curso
+- [x] Gerenciamento de coordenadores
+- [x] Gerenciamento de estudantes
+- [x] Analisar e aprovar/reprovar submissões de horas
+- [x] Dashboard global com métricas em tempo real
+- [x] Interface responsiva (mobile e desktop)
+- [ ] Upload de certificados — *responsabilidade do app mobile*
+- [ ] OCR de certificados — *em desenvolvimento no backend*
+
+---
+
+## 🌐 Deploy
+
+A aplicação está configurada para deploy na **Vercel**, com deploy automático a cada push na branch `main`.
+
+---
+
+## 👥 Equipe — Grupo 4
+
+**Projeto Integrador — Análise e Desenvolvimento de Sistemas (ADS 3)**
+Senac Recife | Professor: Geraldo Gomes
+
+---
+
+## 📄 Licença
+
+Projeto desenvolvido para fins acadêmicos no Senac Recife.
+```
