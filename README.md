@@ -1,68 +1,94 @@
-# 🎓 Senac - Frontend PWA (Portal Acadêmico)
+🎓 Senac Recife — Sistema de Gestão de Horas Complementares (PWA)
 
-Este repositório contém a interface web (Progressive Web App) desenvolvida para o **Sistema de Gestão de Atividades Complementares**. O foco principal é oferecer uma experiência fluida para que alunos submetam seus certificados e coordenadores realizem a auditoria de horas.
+Interface web progressiva (PWA) desenvolvida para o gerenciamento de atividades complementares do Senac Recife. Permite que Super Admins e Coordenadores gerenciem cursos, regras, alunos e validações de horas complementares.
 
----
 
-## 🛠️ Tecnologias Utilizadas
+🔗 Links
 
-A aplicação foi construída utilizando as melhores práticas de desenvolvimento moderno:
+Frontend (PWA): [em breve — Vercel]
+Backend (API): https://backend-production-a784.up.railway.app
+Repositório Backend: https://github.com/grupo4pisenac/backend
 
-* **React + Vite:** Ambiente de desenvolvimento de alta performance.
-* **Tailwind CSS & Shadcn UI:** Estilização baseada em utilitários e componentes de interface consistentes.
-* **Lucide React:** Conjunto de ícones minimalistas e otimizados.
-* **Axios:** Cliente HTTP para comunicação com a API REST em Java.
-* **React Router Dom:** Gerenciamento de navegação e proteção de rotas.
 
----
+🧩 Sobre o Projeto
+O sistema é composto por duas aplicações integradas a um backend único:
 
-## ⚙️ Pré-requisitos
+PWA (este repositório): Voltada para Super Admins e Coordenadores — gerenciamento de cursos, regras, alunos, coordenadores e validação de certificados.
+App Mobile (React Native): Destinado aos alunos para submissão de atividades complementares — repositório separado.
 
-Para rodar o frontend, você precisará de:
-* [Node.js](https://nodejs.org/) instalado (recomenda-se a versão 18 ou superior).
-* O backend (Spring Boot) rodando localmente na porta `8080`.
 
----
+🛠️ Tecnologias Utilizadas
+TecnologiaUsoReact + ViteFramework e ambiente de desenvolvimento de alta performanceTypeScriptTipagem estáticaTailwind CSS + Shadcn/UIEstilização e componentes de interface consistentesLucide ReactÍcones minimalistas e otimizadosAxiosComunicação com a API REST em JavaReact Router DOMGerenciamento de navegação e proteção de rotas por perfilRechartsGráficos e visualizações do dashboard
 
-## 🚀 Como Rodar o Projeto
+👤 Perfis de Acesso
+PerfilAcessoSUPER_ADMINAcesso total — cursos, regras, coordenadores, estudantes, submissões e dashboardCOORDENADORAcesso restrito — estudantes, submissões do seu curso e dashboard
 
-Siga estes dois passos principais para colocar a interface de pé:
+⚙️ Pré-requisitos
 
-### 1. Instalar as Dependências
-Abra o terminal na pasta raiz do projeto e execute:
+Node.js 18 ou superior — nodejs.org
+Acesso à internet (API hospedada no Railway)
 
-```bash
-npm install
-```
 
-### 2. Iniciar o Servidor de Desenvolvimento
-Após a instalação, inicie o Vite:
+🚀 Como Rodar o Projeto
+1. Instalar as dependências
+bashnpm install
+2. Iniciar o servidor de desenvolvimento
+bashnpm run dev
+A aplicação estará disponível em: 👉 http://localhost:5173
+3. Build de produção
+bashnpm run build
 
-```bash
-npm run dev
-```
+🔌 Integração com a API
+A aplicação consome a API Java hospedada no Railway de forma assíncrona via Axios.
+O arquivo de configuração está em src/services/api.ts:
+ts// Produção (padrão)
+baseURL: 'https://backend-production-a784.up.railway.app'
 
-O sistema estará disponível em: 👉 [http://localhost:5173](http://localhost:5173)
+// Para desenvolvimento local (substituir temporariamente)
+baseURL: 'http://localhost:8080'
+Autenticação: todas as requisições autenticadas injetam automaticamente o token JWT via interceptor do Axios.
 
----
-
-## 🔌 Integração com a API
-
-A aplicação consome os dados da API Java de forma assíncrona. 
-
-**Pontos de Atenção:**
-* **CORS:** O backend deve estar configurado para permitir requisições da origem `http://localhost:5173`.
-* **Endpoints:** As rotas de submissão e avaliação apontam para o `localhost:8080`. Certifique-se de que o backend foi iniciado antes de testar as funcionalidades de rede.
-
----
-
-## 📁 Estrutura de Pastas (Principais)
-
-```text
+📁 Estrutura de Pastas
 src/
-├── components/     # Componentes reutilizáveis (UI)
-├── views/          # Páginas principais da aplicação
-├── services/       # Configuração do Axios e chamadas à API
-├── hooks/          # Hooks customizados
-└── App.tsx         # Configuração de rotas e provedores
-```
+├── app/
+│   └── components/              # Componentes de tela
+│       ├── ui/                  # Componentes Shadcn/UI
+│       ├── AnalisarSubmissoes.tsx
+│       ├── ConfigurarRegrasSuperAdmin.tsx
+│       ├── Coordenadores.tsx
+│       ├── DashboardGlobal.tsx
+│       ├── Estudantes.tsx
+│       ├── GerenciarCursosSuperAdmin.tsx
+│       └── SuperAdminLayout.tsx
+├── pages/
+│   └── login.tsx                # Tela de autenticação
+├── services/
+│   └── api.ts                   # Configuração Axios + interceptors JWT
+├── routes.tsx                   # Rotas protegidas por perfil
+├── App.tsx
+└── main.tsx
+
+📱 Funcionalidades
+
+ Login com autenticação JWT
+ Separação de acesso por perfil (Super Admin / Coordenador)
+ Gerenciamento de cursos
+ Configuração de regras de atividades por curso
+ Gerenciamento de coordenadores
+ Gerenciamento de estudantes
+ Analisar e aprovar/reprovar submissões de horas
+ Dashboard global com métricas em tempo real
+ Interface responsiva (mobile e desktop)
+ Upload de certificados — responsabilidade do app mobile
+ OCR de certificados — em desenvolvimento no backend
+
+
+🌐 Deploy
+A aplicação está configurada para deploy na Vercel, com deploy automático a cada push na branch main.
+
+👥 Equipe — Grupo 4
+Projeto Integrador — Análise e Desenvolvimento de Sistemas (ADS 3)
+Senac Recife | Professor: Geraldo Gomes
+
+📄 Licença
+Projeto desenvolvido para fins acadêmicos no Senac Recife.
