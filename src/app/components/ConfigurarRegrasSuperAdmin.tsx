@@ -19,23 +19,22 @@ interface Regra {
   id: number;
   area: string;
   limiteHoras: number;
+  limiteSemestral: number;
 }
 
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 export function ConfigurarRegrasSuperAdmin() {
 
-  // Seleção de curso
   const [cursos, setCursos] = useState<CursoResumo[]>([]);
   const [cursoSelecionadoId, setCursoSelecionadoId] = useState<number | "">("");
-
-  // Regras do curso selecionado
   const [regras, setRegras] = useState<Regra[]>([]);
   const [loadingRegras, setLoadingRegras] = useState(false);
 
   // Formulário — nova regra
   const [newArea, setNewArea] = useState("");
-  const [newLimite, setNewLimite] = useState<number | "">("");
+  const [newLimiteHoras, setNewLimiteHoras] = useState<number | "">("");
+  const [newLimiteSemestral, setNewLimiteSemestral] = useState<number | "">("");
 
   // Modal de edição
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -81,17 +80,19 @@ export function ConfigurarRegrasSuperAdmin() {
   // ── Criar regra ──────────────────────────────────────────────────────────────
 
   const handleAddRule = async () => {
-    if (!newArea.trim() || newLimite === "" || cursoSelecionadoId === "") return;
+    if (!newArea.trim() || newLimiteHoras === "" || newLimiteSemestral === "" || cursoSelecionadoId === "") return;
 
     const payload = {
       area: newArea.trim(),
-      limiteHoras: Number(newLimite),
+      limiteHoras: Number(newLimiteHoras),
+      limiteSemestral: Number(newLimiteSemestral),
     };
 
     try {
       await api.post(`/cursos/${cursoSelecionadoId}/regras`, payload);
       setNewArea("");
-      setNewLimite("");
+      setNewLimiteHoras("");
+      setNewLimiteSemestral("");
       fetchRegras(Number(cursoSelecionadoId));
     } catch (error: any) {
       const mensagem = error?.response?.data?.message || "Erro ao adicionar regra.";
@@ -112,6 +113,7 @@ export function ConfigurarRegrasSuperAdmin() {
     const payload = {
       area: editingRegra.area,
       limiteHoras: editingRegra.limiteHoras,
+      limiteSemestral: editingRegra.limiteSemestral,
     };
 
     try {
@@ -211,7 +213,7 @@ export function ConfigurarRegrasSuperAdmin() {
             </h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="space-y-2">
               <Label className="text-[#002868]">Nome da Categoria</Label>
               <Input
@@ -222,13 +224,24 @@ export function ConfigurarRegrasSuperAdmin() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[#002868]">Limite de Horas</Label>
+              <Label className="text-[#002868]">Limite Total do Curso (horas)</Label>
               <Input
                 type="number"
                 min="1"
                 placeholder="Ex: 100"
-                value={newLimite}
-                onChange={(e) => setNewLimite(e.target.value === "" ? "" : Number(e.target.value))}
+                value={newLimiteHoras}
+                onChange={(e) => setNewLimiteHoras(e.target.value === "" ? "" : Number(e.target.value))}
+                className="bg-white border-gray-200"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[#002868]">Limite Semestral (horas)</Label>
+              <Input
+                type="number"
+                min="1"
+                placeholder="Ex: 50"
+                value={newLimiteSemestral}
+                onChange={(e) => setNewLimiteSemestral(e.target.value === "" ? "" : Number(e.target.value))}
                 className="bg-white border-gray-200"
               />
             </div>
@@ -236,7 +249,7 @@ export function ConfigurarRegrasSuperAdmin() {
 
           <Button
             onClick={handleAddRule}
-            disabled={!newArea.trim() || newLimite === ""}
+            disabled={!newArea.trim() || newLimiteHoras === "" || newLimiteSemestral === ""}
             className="bg-[#FF9414] hover:bg-[#FF9414]/90 text-white"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -269,7 +282,10 @@ export function ConfigurarRegrasSuperAdmin() {
                       Categoria
                     </th>
                     <th className="text-left py-4 px-6 text-sm text-[#002868]" style={{ fontFamily: 'Arvo, serif' }}>
-                      Limite de Horas
+                      Limite do Curso
+                    </th>
+                    <th className="text-left py-4 px-6 text-sm text-[#002868]" style={{ fontFamily: 'Arvo, serif' }}>
+                      Limite Semestral
                     </th>
                     <th className="text-left py-4 px-6 text-sm text-[#002868]" style={{ fontFamily: 'Arvo, serif' }}>
                       Ações
@@ -288,6 +304,14 @@ export function ConfigurarRegrasSuperAdmin() {
                         <div className="flex items-center gap-2">
                           <span className="text-2xl text-[#0051A2]" style={{ fontFamily: 'Arvo, serif' }}>
                             {regra.limiteHoras}
+                          </span>
+                          <span className="text-sm text-gray-600">horas</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl text-[#0051A2]" style={{ fontFamily: 'Arvo, serif' }}>
+                            {regra.limiteSemestral}
                           </span>
                           <span className="text-sm text-gray-600">horas</span>
                         </div>
@@ -342,13 +366,25 @@ export function ConfigurarRegrasSuperAdmin() {
               </div>
               <div>
                 <label className="block text-sm font-bold text-[#002868] mb-1">
-                  Limite de Horas
+                  Limite Total do Curso (horas)
                 </label>
                 <Input
                   type="number"
                   min="1"
                   value={editingRegra.limiteHoras}
                   onChange={(e) => setEditingRegra({ ...editingRegra, limiteHoras: Number(e.target.value) })}
+                  className="bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-[#002868] mb-1">
+                  Limite Semestral (horas)
+                </label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={editingRegra.limiteSemestral}
+                  onChange={(e) => setEditingRegra({ ...editingRegra, limiteSemestral: Number(e.target.value) })}
                   className="bg-white"
                 />
               </div>
