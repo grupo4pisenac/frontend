@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
-import { Bell, LayoutDashboard, GraduationCap, Settings, Users, Menu, X, User } from "lucide-react";
+import { Bell, LayoutDashboard, GraduationCap, Settings, Users, Menu, X, User, ClipboardList } from "lucide-react";
 import { useState } from "react";
 
 export function SuperAdminLayout() {
@@ -36,11 +36,13 @@ export function SuperAdminLayout() {
     { name: "Configurar Regras", path: `${basePath}/regras`, icon: Settings },
     { name: "Coordenadores", path: `${basePath}/coordenadores`, icon: Users },
     { name: "Gerenciar Estudantes", path: `${basePath}/estudantes`, icon: User },
+    { name: "Analisar Submissões", path: `${basePath}/submissoes`, icon: ClipboardList },
   ];
 
   const navigationCoordenador = [
     { name: "Dashboard", path: `${basePath}`, icon: LayoutDashboard },
     { name: "Gerenciar Estudantes", path: `${basePath}/estudantes`, icon: User },
+    { name: "Analisar Submissões", path: `${basePath}/submissoes`, icon: ClipboardList },
   ];
 
   const navigation = isSuperAdmin ? navigationSuperAdmin : navigationCoordenador;

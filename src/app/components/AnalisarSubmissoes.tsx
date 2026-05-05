@@ -2,262 +2,373 @@ import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Search, FileText, Download, Filter } from "lucide-react";
-import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
+import { Search, FileText, Filter, CheckCircle, XCircle, ExternalLink } from "lucide-react";
+import { useState, useEffect } from "react";
+import { api } from "../../services/api";
+
+// ─── Tipos alinhados com SolicitacaoResponse.java ────────────────────────────
+
+interface Solicitacao {
+  id: number;
+  descricao: string;
+  area: string;
+  horasSolicitadas: number;
+  status: "PENDENTE" | "APROVADA" | "REPROVADA";
+  dataCriacao: string;
+  nomeAluno: string;
+  urlArquivo: string | null;
+  semestre: number | null;
+}
+
+interface CursoResumo {
+  id: number;
+  nome: string;
+}
+
+// ─── Componente ───────────────────────────────────────────────────────────────
 
 export function AnalisarSubmissoes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const submissions = [
-    {
-      id: 1,
-      studentName: "João Pedro Santos",
-      course: "Engenharia da Computação",
-      category: "Pesquisa",
-      hoursRequested: 20,
-      date: "2026-03-10",
-      status: "pending",
-      description: "Participação em projeto de Inteligência Artificial",
-    },
-    {
-      id: 2,
-      studentName: "Ana Carolina Oliveira",
-      course: "Sistemas de Informação",
-      category: "Extensão",
-      hoursRequested: 15,
-      date: "2026-03-12",
-      status: "pending",
-      description: "Workshop de desenvolvimento web para comunidade",
-    },
-    {
-      id: 3,
-      studentName: "Lucas Almeida Costa",
-      course: "Ciência da Computação",
-      category: "Cultura",
-      hoursRequested: 10,
-      date: "2026-03-08",
-      status: "approved",
-      description: "Participação em evento cultural da universidade",
-    },
-    {
-      id: 4,
-      studentName: "Beatriz Fernandes Lima",
-      course: "Engenharia de Software",
-      category: "Pesquisa",
-      hoursRequested: 25,
-      date: "2026-03-14",
-      status: "pending",
-      description: "Artigo científico publicado em conferência internacional",
-    },
-    {
-      id: 5,
-      studentName: "Carlos Eduardo Souza",
-      course: "Engenharia da Computação",
-      category: "Extensão",
-      hoursRequested: 12,
-      date: "2026-03-11",
-      status: "rejected",
-      description: "Curso de programação para jovens",
-    },
-    {
-      id: 6,
-      studentName: "Mariana Santos Pereira",
-      course: "Sistemas de Informação",
-      category: "Pesquisa",
-      hoursRequested: 18,
-      date: "2026-03-15",
-      status: "pending",
-      description: "Iniciação científica em Machine Learning",
-    },
-    {
-      id: 7,
-      studentName: "Rafael Oliveira Cruz",
-      course: "Ciência da Computação",
-      category: "Eventos",
-      hoursRequested: 8,
-      date: "2026-03-13",
-      status: "approved",
-      description: "Palestra sobre Cloud Computing",
-    },
-    {
-      id: 8,
-      studentName: "Juliana Costa Martins",
-      course: "Engenharia de Software",
-      category: "Extensão",
-      hoursRequested: 20,
-      date: "2026-03-09",
-      status: "pending",
-      description: "Desenvolvimento de aplicativo para ONG local",
-    },
-  ];
+  // Cursos e seleção
+  const [cursos, setCursos] = useState<CursoResumo[]>([]);
+  const [cursoSelecionadoId, setCursoSelecionadoId] = useState<number | "">("");
 
-  const filteredSubmissions = submissions.filter((submission) => {
+  // Solicitações
+  const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Modal de avaliação
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [solicitacaoSelecionada, setSolicitacaoSelecionada] = useState<Solicitacao | null>(null);
+  const [salvando, setSalvando] = useState(false);
+
+  // ── Buscar cursos ────────────────────────────────────────────────────────────
+
+  const fetchCursos = async () => {
+    try {
+      const response = await api.get('/cursos');
+      setCursos(response.data);
+    } catch (error) {
+      console.error("Erro ao buscar cursos:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCursos();
+  }, []);
+
+  // ── Buscar solicitações do curso selecionado ─────────────────────────────────
+
+  const fetchSolicitacoes = async (cursoId: number) => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/solicitacoes/curso/${cursoId}`);
+      setSolicitacoes(response.data);
+    } catch (error) {
+      console.error("Erro ao buscar solicitações:", error);
+      alert("Não foi possível carregar as solicitações.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCursoChange = (value: string) => {
+    const id = Number(value);
+    setCursoSelecionadoId(id);
+    setSolicitacoes([]);
+    fetchSolicitacoes(id);
+  };
+
+  // ── Filtro de busca ──────────────────────────────────────────────────────────
+
+  const filteredSolicitacoes = solicitacoes.filter((s) => {
     const matchesSearch =
-      submission.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      submission.course.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || submission.status === statusFilter;
+      s.nomeAluno?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.area?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || s.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
+  // ── Aprovar ou Reprovar ──────────────────────────────────────────────────────
+
+  const handleAtualizarStatus = async (status: "APROVADA" | "REPROVADA") => {
+    if (!solicitacaoSelecionada) return;
+    try {
+      setSalvando(true);
+      await api.patch(`/solicitacoes/${solicitacaoSelecionada.id}/status?status=${status}`);
+      setIsModalOpen(false);
+      setSolicitacaoSelecionada(null);
+      if (cursoSelecionadoId !== "") fetchSolicitacoes(Number(cursoSelecionadoId));
+    } catch (error: any) {
+      const mensagem = error?.response?.data?.message || "Erro ao atualizar status.";
+      alert(mensagem);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  // ── Badge de status ──────────────────────────────────────────────────────────
+
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "pending":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800">
-            Pendente
-          </span>
-        );
-      case "approved":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs bg-green-100 text-green-800">
-            Aprovado
-          </span>
-        );
-      case "rejected":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs bg-red-100 text-red-800">
-            Rejeitado
-          </span>
-        );
+      case "PENDENTE":
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800">Pendente</span>;
+      case "APROVADA":
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs bg-green-100 text-green-800">Aprovado</span>;
+      case "REPROVADA":
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs bg-red-100 text-red-800">Reprovado</span>;
       default:
         return null;
     }
   };
 
+  // ── Render ───────────────────────────────────────────────────────────────────
+
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl text-gray-900 mb-2">Analisar Submissões</h2>
-          <p className="text-sm text-gray-600">
-            Revise e aprove solicitações de horas complementares dos alunos
-          </p>
-        </div>
-        <Button className="bg-[#0f3460] hover:bg-[#0f3460]/90 text-white">
-          <Download className="w-4 h-4 mr-2" />
-          Exportar Relatório
-        </Button>
+
+      {/* Cabeçalho */}
+      <div>
+        <h2 className="text-2xl text-[#002868] mb-2" style={{ fontFamily: 'Arvo, serif' }}>
+          Analisar Submissões
+        </h2>
+        <p className="text-sm text-gray-600">
+          Revise e aprove solicitações de horas complementares dos alunos
+        </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="p-4">
-          <p className="text-sm text-gray-600">Total de Submissões</p>
-          <p className="text-2xl text-gray-900 mt-1">{submissions.length}</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-sm text-gray-600">Pendentes</p>
-          <p className="text-2xl text-yellow-600 mt-1">
-            {submissions.filter((s) => s.status === "pending").length}
-          </p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-sm text-gray-600">Aprovadas</p>
-          <p className="text-2xl text-green-600 mt-1">
-            {submissions.filter((s) => s.status === "approved").length}
-          </p>
-        </Card>
-      </div>
-
-      {/* Filters */}
+      {/* Seleção de Curso */}
       <Card className="p-6">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Buscar por nome do aluno ou curso..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <div className="flex gap-4">
+        <label className="block text-sm font-bold text-[#002868] mb-2">
+          Selecionar Curso
+        </label>
+        <Select
+          value={cursoSelecionadoId === "" ? "" : String(cursoSelecionadoId)}
+          onValueChange={handleCursoChange}
+        >
+          <SelectTrigger className="w-full md:w-96">
+            <SelectValue placeholder="Selecione um curso para ver as submissões" />
+          </SelectTrigger>
+          <SelectContent>
+            {cursos.map((curso) => (
+              <SelectItem key={curso.id} value={String(curso.id)}>
+                {curso.nome}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Card>
+
+      {/* Cards de resumo */}
+      {cursoSelecionadoId !== "" && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card className="p-4">
+            <p className="text-sm text-gray-600">Total</p>
+            <p className="text-2xl text-gray-900 mt-1">{solicitacoes.length}</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-sm text-gray-600">Pendentes</p>
+            <p className="text-2xl text-yellow-600 mt-1">
+              {solicitacoes.filter(s => s.status === "PENDENTE").length}
+            </p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-sm text-gray-600">Aprovadas</p>
+            <p className="text-2xl text-green-600 mt-1">
+              {solicitacoes.filter(s => s.status === "APROVADA").length}
+            </p>
+          </Card>
+        </div>
+      )}
+
+      {/* Filtros */}
+      {cursoSelecionadoId !== "" && (
+        <Card className="p-6">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Buscar por nome do aluno ou área..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[180px]">
                 <Filter className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="Filtrar por status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os Status</SelectItem>
-                <SelectItem value="pending">Pendente</SelectItem>
-                <SelectItem value="approved">Aprovado</SelectItem>
-                <SelectItem value="rejected">Rejeitado</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="PENDENTE">Pendente</SelectItem>
+                <SelectItem value="APROVADA">Aprovado</SelectItem>
+                <SelectItem value="REPROVADA">Reprovado</SelectItem>
               </SelectContent>
             </Select>
           </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
-      {/* Submissions Table */}
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-4 px-6 text-sm text-gray-600">Nome do Aluno</th>
-                <th className="text-left py-4 px-6 text-sm text-gray-600">Curso</th>
-                <th className="text-left py-4 px-6 text-sm text-gray-600">Categoria</th>
-                <th className="text-left py-4 px-6 text-sm text-gray-600">Horas Solicitadas</th>
-                <th className="text-left py-4 px-6 text-sm text-gray-600">Data</th>
-                <th className="text-left py-4 px-6 text-sm text-gray-600">Status</th>
-                <th className="text-left py-4 px-6 text-sm text-gray-600">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredSubmissions.map((submission) => (
-                <tr key={submission.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#0f3460] to-[#ff6b35] flex items-center justify-center text-white text-xs">
-                        {submission.studentName
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .slice(0, 2)}
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-900">{submission.studentName}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 text-sm text-gray-600">{submission.course}</td>
-                  <td className="py-4 px-6 text-sm text-gray-600">{submission.category}</td>
-                  <td className="py-4 px-6 text-sm text-gray-900">{submission.hoursRequested}h</td>
-                  <td className="py-4 px-6 text-sm text-gray-600">
-                    {new Date(submission.date).toLocaleDateString("pt-BR")}
-                  </td>
-                  <td className="py-4 px-6">{getStatusBadge(submission.status)}</td>
-                  <td className="py-4 px-6">
-                    {submission.status === "pending" ? (
-                      <Button
-                        size="sm"
-                        className="bg-[#ff6b35] hover:bg-[#ff6b35]/90 text-white"
-                      >
-                        <FileText className="w-3 h-3 mr-1" />
-                        Avaliar
-                      </Button>
-                    ) : (
-                      <Button size="sm" variant="outline" className="text-gray-600">
-                        <FileText className="w-3 h-3 mr-1" />
-                        Detalhes
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {/* Tabela */}
+      {cursoSelecionadoId !== "" && (
+        <Card className="overflow-hidden">
+          {loading ? (
+            <p className="text-sm text-gray-500 text-center py-12">Carregando submissões...</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-4 px-6 text-sm text-gray-600">Aluno</th>
+                    <th className="text-left py-4 px-6 text-sm text-gray-600">Área</th>
+                    <th className="text-left py-4 px-6 text-sm text-gray-600">Horas</th>
+                    <th className="text-left py-4 px-6 text-sm text-gray-600">Semestre</th>
+                    <th className="text-left py-4 px-6 text-sm text-gray-600">Data</th>
+                    <th className="text-left py-4 px-6 text-sm text-gray-600">Status</th>
+                    <th className="text-left py-4 px-6 text-sm text-gray-600">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredSolicitacoes.map((s) => (
+                    <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#002868] to-[#FF9414] flex items-center justify-center text-white text-xs font-bold">
+                            {s.nomeAluno?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                          </div>
+                          <p className="text-sm text-gray-900">{s.nomeAluno}</p>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 text-sm text-gray-600">{s.area}</td>
+                      <td className="py-4 px-6 text-sm text-gray-900">{s.horasSolicitadas}h</td>
+                      <td className="py-4 px-6 text-sm text-gray-600">{s.semestre ?? "-"}º</td>
+                      <td className="py-4 px-6 text-sm text-gray-600">
+                        {s.dataCriacao ? new Date(s.dataCriacao).toLocaleDateString("pt-BR") : "-"}
+                      </td>
+                      <td className="py-4 px-6">{getStatusBadge(s.status)}</td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => { setSolicitacaoSelecionada(s); setIsModalOpen(true); }}
+                            className="bg-[#002868] hover:bg-[#001a4d] text-white"
+                          >
+                            <FileText className="w-3 h-3 mr-1" />
+                            {s.status === "PENDENTE" ? "Avaliar" : "Detalhes"}
+                          </Button>
+                          {s.urlArquivo && (
+                            <a
+                              href={s.urlArquivo}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 text-gray-500 hover:text-[#002868] hover:bg-gray-100 rounded transition-colors"
+                              title="Ver certificado"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
-        {filteredSubmissions.length === 0 && (
-          <div className="text-center py-12">
-            <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">Nenhuma submissão encontrada</p>
-          </div>
-        )}
-      </Card>
+              {filteredSolicitacoes.length === 0 && (
+                <div className="text-center py-12">
+                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">Nenhuma submissão encontrada</p>
+                </div>
+              )}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Modal de Avaliação */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-[#002868] font-bold" style={{ fontFamily: 'Arvo, serif' }}>
+              {solicitacaoSelecionada?.status === "PENDENTE" ? "Avaliar Submissão" : "Detalhes da Submissão"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {solicitacaoSelecionada && (
+            <div className="py-2 space-y-3">
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-semibold">Aluno</p>
+                <p className="text-sm text-gray-900">{solicitacaoSelecionada.nomeAluno}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-semibold">Área</p>
+                <p className="text-sm text-gray-900">{solicitacaoSelecionada.area}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-semibold">Horas Solicitadas</p>
+                <p className="text-sm text-gray-900">{solicitacaoSelecionada.horasSolicitadas}h</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-semibold">Semestre</p>
+                <p className="text-sm text-gray-900">{solicitacaoSelecionada.semestre ?? "-"}º</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-semibold">Descrição</p>
+                <p className="text-sm text-gray-900">{solicitacaoSelecionada.descricao}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-semibold">Status atual</p>
+                {getStatusBadge(solicitacaoSelecionada.status)}
+              </div>
+              {solicitacaoSelecionada.urlArquivo && (
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Certificado</p>
+                  <a
+                    href={solicitacaoSelecionada.urlArquivo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-[#002868] underline flex items-center gap-1"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    Ver certificado
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="mt-4 flex gap-2">
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+              Fechar
+            </Button>
+            {solicitacaoSelecionada?.status === "PENDENTE" && (
+              <>
+                <Button
+                  onClick={() => handleAtualizarStatus("REPROVADA")}
+                  disabled={salvando}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  <XCircle className="w-4 h-4 mr-2" />
+                  Reprovar
+                </Button>
+                <Button
+                  onClick={() => handleAtualizarStatus("APROVADA")}
+                  disabled={salvando}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Aprovar
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

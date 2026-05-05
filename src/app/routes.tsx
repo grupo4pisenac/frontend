@@ -5,6 +5,7 @@ import { GerenciarCursosSuperAdmin } from "./components/GerenciarCursosSuperAdmi
 import { ConfigurarRegrasSuperAdmin } from "./components/ConfigurarRegrasSuperAdmin";
 import { Coordenadores } from "./components/Coordenadores";
 import { Estudantes } from "./components/Estudantes";
+import { AnalisarSubmissoes } from "./components/AnalisarSubmissoes";
 import { Login } from "./pages/login";
 
 // ─── Proteção genérica (token existe) ────────────────────────────────────────
@@ -76,6 +77,7 @@ export const router = createBrowserRouter([
           { path: "regras", element: <ConfigurarRegrasSuperAdmin /> },
           { path: "coordenadores", element: <Coordenadores /> },
           { path: "estudantes", element: <Estudantes /> },
+          { path: "submissoes", element: <AnalisarSubmissoes /> },
           { path: "*", element: <DashboardGlobal /> },
         ],
       },
@@ -83,9 +85,6 @@ export const router = createBrowserRouter([
   },
 
   // ── Coordenador ──────────────────────────────────────────────────────────────
-  // Por enquanto usa o mesmo layout e telas do SuperAdmin
-  // mas com acesso restrito pelo perfil
-  // Quando tiver layout próprio do coordenador, trocar aqui
   {
     path: "/app/coord",
     element: <CoordenadorRoute />,
@@ -95,6 +94,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <DashboardGlobal /> },
           { path: "estudantes", element: <Estudantes /> },
+          { path: "submissoes", element: <AnalisarSubmissoes /> },
           { path: "*", element: <DashboardGlobal /> },
         ],
       },
