@@ -1,68 +1,152 @@
-# 🎓 Senac - Frontend PWA (Portal Acadêmico)
+# 🎓 Senac Recife — Sistema de Gestão de Horas Complementares (PWA)
 
-Este repositório contém a interface web (Progressive Web App) desenvolvida para o **Sistema de Gestão de Atividades Complementares**. O foco principal é oferecer uma experiência fluida para que alunos submetam seus certificados e coordenadores realizem a auditoria de horas.
+> Interface web progressiva (PWA) desenvolvida para o gerenciamento de atividades complementares do Senac Recife. Permite que Super Admins e Coordenadores gerenciem cursos, regras, alunos e validações de horas complementares.
+
+---
+
+## 🔗 Links
+
+- **Frontend (PWA):** [em breve — Vercel]
+- **Backend (API):** https://backend-production-a784.up.railway.app
+- **Repositório Backend:** https://github.com/grupo4pisenac/backend
+
+---
+
+## 🧩 Sobre o Projeto
+
+O sistema é composto por duas aplicações integradas a um backend único:
+
+- **PWA (este repositório):** Voltada para Super Admins e Coordenadores — gerenciamento de cursos, regras, alunos, coordenadores e validação de certificados.
+- **App Mobile (React Native):** Destinado aos alunos para submissão de atividades complementares — repositório separado.
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
-A aplicação foi construída utilizando as melhores práticas de desenvolvimento moderno:
+| Tecnologia | Uso |
+|---|---|
+| React + Vite | Framework e ambiente de desenvolvimento de alta performance |
+| TypeScript | Tipagem estática |
+| Tailwind CSS + Shadcn/UI | Estilização e componentes de interface consistentes |
+| Lucide React | Ícones minimalistas e otimizados |
+| Axios | Comunicação com a API REST em Java |
+| React Router DOM | Gerenciamento de navegação e proteção de rotas por perfil |
+| Recharts | Gráficos e visualizações do dashboard |
 
-* **React + Vite:** Ambiente de desenvolvimento de alta performance.
-* **Tailwind CSS & Shadcn UI:** Estilização baseada em utilitários e componentes de interface consistentes.
-* **Lucide React:** Conjunto de ícones minimalistas e otimizados.
-* **Axios:** Cliente HTTP para comunicação com a API REST em Java.
-* **React Router Dom:** Gerenciamento de navegação e proteção de rotas.
+---
+
+## 👤 Perfis de Acesso
+
+| Perfil | Acesso |
+|---|---|
+| `SUPER_ADMIN` | Acesso total — cursos, regras, coordenadores, estudantes, submissões e dashboard |
+| `COORDENADOR` | Acesso restrito — estudantes, submissões do seu curso e dashboard |
 
 ---
 
 ## ⚙️ Pré-requisitos
 
-Para rodar o frontend, você precisará de:
-* [Node.js](https://nodejs.org/) instalado (recomenda-se a versão 18 ou superior).
-* O backend (Spring Boot) rodando localmente na porta `8080`.
+- **Node.js** 18 ou superior — [nodejs.org](https://nodejs.org/)
+- Acesso à internet (API hospedada no Railway)
 
 ---
 
 ## 🚀 Como Rodar o Projeto
 
-Siga estes dois passos principais para colocar a interface de pé:
-
-### 1. Instalar as Dependências
-Abra o terminal na pasta raiz do projeto e execute:
+### 1. Instalar as dependências
 
 ```bash
 npm install
 ```
 
-### 2. Iniciar o Servidor de Desenvolvimento
-Após a instalação, inicie o Vite:
+### 2. Iniciar o servidor de desenvolvimento
 
 ```bash
 npm run dev
 ```
 
-O sistema estará disponível em: 👉 [http://localhost:5173](http://localhost:5173)
+A aplicação estará disponível em: 👉 http://localhost:5173
+
+### 3. Build de produção
+
+```bash
+npm run build
+```
 
 ---
 
 ## 🔌 Integração com a API
 
-A aplicação consome os dados da API Java de forma assíncrona. 
+A aplicação consome a API Java hospedada no Railway de forma assíncrona via Axios.
 
-**Pontos de Atenção:**
-* **CORS:** O backend deve estar configurado para permitir requisições da origem `http://localhost:5173`.
-* **Endpoints:** As rotas de submissão e avaliação apontam para o `localhost:8080`. Certifique-se de que o backend foi iniciado antes de testar as funcionalidades de rede.
+O arquivo de configuração está em `src/services/api.ts`:
+
+```ts
+// Produção (padrão)
+baseURL: 'https://backend-production-a784.up.railway.app'
+
+// Para desenvolvimento local (substituir temporariamente)
+baseURL: 'http://localhost:8080'
+```
+
+**Autenticação:** todas as requisições autenticadas injetam automaticamente o token JWT via interceptor do Axios.
 
 ---
 
-## 📁 Estrutura de Pastas (Principais)
+## 📁 Estrutura de Pastas
 
-```text
-src/
-├── components/     # Componentes reutilizáveis (UI)
-├── views/          # Páginas principais da aplicação
-├── services/       # Configuração do Axios e chamadas à API
-├── hooks/          # Hooks customizados
-└── App.tsx         # Configuração de rotas e provedores
 ```
+src/
+├── app/
+│   └── components/              # Componentes de tela
+│       ├── ui/                  # Componentes Shadcn/UI
+│       ├── AnalisarSubmissoes.tsx
+│       ├── ConfigurarRegrasSuperAdmin.tsx
+│       ├── Coordenadores.tsx
+│       ├── DashboardGlobal.tsx
+│       ├── Estudantes.tsx
+│       ├── GerenciarCursosSuperAdmin.tsx
+│       └── SuperAdminLayout.tsx
+├── pages/
+│   └── login.tsx                # Tela de autenticação
+├── services/
+│   └── api.ts                   # Configuração Axios + interceptors JWT
+├── routes.tsx                   # Rotas protegidas por perfil
+├── App.tsx
+└── main.tsx
+```
+
+---
+
+## 📱 Funcionalidades
+
+- [x] Login com autenticação JWT
+- [x] Separação de acesso por perfil (Super Admin / Coordenador)
+- [x] Gerenciamento de cursos
+- [x] Configuração de regras de atividades por curso
+- [x] Gerenciamento de coordenadores
+- [x] Gerenciamento de estudantes
+- [x] Analisar e aprovar/reprovar submissões de horas
+- [x] Dashboard global com métricas em tempo real
+- [x] Interface responsiva (mobile e desktop)
+- [ ] Upload de certificados — responsabilidade do app mobile
+- [ ] OCR de certificados — em desenvolvimento no backend
+
+---
+
+## 🌐 Deploy
+
+A aplicação está configurada para deploy na **Vercel**, com deploy automático a cada push na branch `main`.
+
+---
+
+## 👥 Equipe — Grupo 4
+
+Projeto Integrador — Análise e Desenvolvimento de Sistemas (ADS 3)  
+**Senac Recife** | Professor: Geraldo Gomes
+
+---
+
+## 📄 Licença
+
+Projeto desenvolvido para fins acadêmicos no Senac Recife.
