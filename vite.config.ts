@@ -59,3 +59,4 @@ export default defineConfig({
   },
   assetsInclude: ['**/*.svg', '**/*.csv'],
 })
+//Imagens funcionando kauan - teste de commit
