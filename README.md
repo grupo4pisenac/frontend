@@ -4,7 +4,7 @@ Interface web progressiva (PWA) desenvolvida para o gerenciamento de atividades 
 
 ## 🔗 Links
 
-* **Frontend (PWA):** [Acessar a aplicação](https://frontend-two-xi-zk2ps4oz7r.vercel.app/)
+* **Frontend (PWA):** [Acessar a aplicação](https://frontend4-xi.vercel.app/)
 * **Backend (API):** [Acessar a API](https://backend-5v4v.onrender.com/)
 * **Repositório Backend:** [GitHub - Grupo 4 API Senac](https://github.com/grupo4pisenac/backend)
 
