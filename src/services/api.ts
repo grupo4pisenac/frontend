@@ -2,7 +2,7 @@ import axios from 'axios';
 
 export const api = axios.create({
 
-  baseURL: 'https://backend-production-a784.up.railway.app', 
+  baseURL: 'https://backend-5v4v.onrender.com', 
 });
 
 api.interceptors.request.use((config) => {
